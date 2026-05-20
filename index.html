@@ -447,8 +447,11 @@ function populateRecipePicker(){
 
 // COOK MODE - Light & friendly with quantities in steps
 function parseIng(s){
-  var m=s.match(/^([\d¼½¾⅓⅔\/\.\s]+\s*(?:g|kg|ml|l|L|tsp|tbsp|cups?|oz|lbs?|pinch|bunch|slices?|cans?|pieces?|cloves?|sprigs?|large|medium|small|whole)?\.?)\s*(.+)$/i);
-  return m?{q:m[1].trim(),n:m[2].trim(),full:s}:{q:'',n:s,full:s};
+  // Match quantity + unit, but NOT words like "large", "medium", "small", "whole" as units on their own
+  // Supports: g, kg, ml, l/L (only if followed by space+word), tsp, tbsp, tbs, T, ts, cups, oz, lb/lbs, pinch, bunch, handful, slices, cans, tins, pieces, cloves, sprigs, rashers, sheets
+  var m=s.match(/^([\d¼½¾⅓⅔\/\.\s]+\s*(?:g|kg|ml|(?:l|L)(?=\s)|tsp|tbsp|tbs|T(?=\s)|ts(?=\s)|cups?|fl\.?\s*oz|oz|lbs?|pinch|bunch|handful|slices?|cans?|tins?|pieces?|cloves?|sprigs?|stalks?|rashers?|sheets?|heads?|bunch(?:es)?)?\.?)\s+(.+)$/);
+  if(m&&m[2]&&m[2].length>1){return{q:m[1].trim(),n:m[2].trim(),full:s};}
+  return{q:'',n:s,full:s};
 }
 function highlightQtysInStep(step, parsedIngs){
   var result=esc(step);
@@ -472,6 +475,32 @@ function highlightQtysInStep(step, parsedIngs){
 function enterCookMode(rec){
   g('ckt').textContent='👨‍🍳 '+rec.name;
   var parsed=(rec.ings||[]).map(parseIng);
+
+  // Build ingredient gather page
+  var ih='<div id="ckIngPage"><div class="ck-sec-title">📦 First — Gather & Measure Your Ingredients</div>'+
+    '<p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">Get everything ready before you start cooking!</p>'+
+    '<ul class="ck-ing-list">'+parsed.map(function(p){
+      return'<li><span class="ck-qty">'+(p.q?esc(p.q):'—')+'</span><span class="ck-name">'+esc(p.n)+'</span></li>';
+    }).join('')+'</ul>'+
+    '<button class="cn" onclick="startCooking()" style="width:100%;margin-top:8px">Ready to Cook! →</button>'+
+  '</div>'+
+  '<div id="ckStepPage" style="display:none"><div class="ck-sec-title">👨‍🍳 Method</div><div id="ckw">';
+
+  cks=(rec.steps||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+
+  // For each step, find which ingredients are needed and show only their quantities
+  var stepHtml=cks.map(function(step,i){
+    var stepEsc=esc(step);
+    // Find ingredients mentioned in this step and highlight with quantity
+    var qtysUsed=[];
+    parsed.forEach(function(p){
+      if(!p.q||!p.n)return;
+      var firstName=p.n.replace(/[,\(].*/,'').trim().split(/\s+/)[0];
+      if(!firstName||firstName.length<3)return;
+      try{
+        var safe=firstName.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\function enterCookMode(rec){
+  g('ckt').textContent='👨‍🍳 '+rec.name;
+  var parsed=(rec.ings||[]).map(parseIng);
   var ih='<div style="margin-bottom:28px"><div class="ck-sec-title">📦 Step 1 — Gather Your Ingredients</div>'+
     '<ul class="ck-ing-list">'+parsed.map(function(p){return'<li><span class="ck-qty">'+(p.q?esc(p.q):'—')+'</span><span class="ck-name">'+esc(p.n)+'</span></li>';}).join('')+'</ul></div>';
   cks=(rec.steps||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
@@ -481,6 +510,36 @@ function enterCookMode(rec){
       '<div class="ck-step-txt">'+highlightQtysInStep(s,parsed)+'</div>'+
     '</div>';}).join('')+'</div></div>';
   g('ckb').innerHTML=ih+sh;cki=0;cka2=false;g('cka').textContent='📋 All Steps';uck();g('ck').classList.add('s');
+}');
+        var re=new RegExp('\\b('+safe+'\\w*)\\b','gi');
+        if(re.test(step)){qtysUsed.push(p);}
+      }catch(e){}
+    });
+    var qtyHtml='';
+    if(qtysUsed.length){
+      qtyHtml='<div style="background:var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:.85rem;border:1px solid var(--border)">'+
+        '<span style="color:var(--terra);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">Ingredients for this step: </span>'+
+        qtysUsed.map(function(p){return'<span style="color:var(--terrad);font-weight:600;margin-right:10px">'+esc(p.q)+' '+esc(p.n.split(',')[0])+'</span>';}).join('')+
+      '</div>';
+    }
+    return'<div class="ck-step'+(i===0?' ac':'')+'" id="cks'+i+'">'+
+      '<div class="ck-step-lbl">Step '+(i+1)+' of '+cks.length+'</div>'+
+      qtyHtml+
+      '<div class="ck-step-txt">'+stepEsc+'</div>'+
+    '</div>';
+  }).join('');
+
+  g('ckb').innerHTML=ih+stepHtml+'</div></div>';
+  cki=0;cka2=false;g('cka').textContent='📋 All Steps';
+  g('ckp').style.visibility='hidden';g('ckn').style.visibility='hidden';g('ckpr').textContent='Ingredients';
+  g('ck').classList.add('s');
+}
+
+function startCooking(){
+  g('ckIngPage').style.display='none';
+  g('ckStepPage').style.display='block';
+  g('ckp').style.visibility='visible';g('ckn').style.visibility='visible';
+  uck();
 }
 function uck(){g('ckp').disabled=cki===0;g('ckn').disabled=cki>=cks.length-1;g('ckpr').textContent='Step '+(cki+1)+' of '+cks.length;}
 g('ckp').addEventListener('click',function(){var o=g('cks'+cki);if(o&&!cka2)o.classList.remove('ac');cki=Math.max(0,cki-1);var c=g('cks'+cki);if(c){if(!cka2)c.classList.add('ac');c.scrollIntoView({behavior:'smooth',block:'nearest'});}uck();});
@@ -608,10 +667,12 @@ function renderMyPage(){
   function pillType(type,text){
     var icons={B:'🌅',L:'☀️',S:'🍎',work:'💼',uni:'🎓',appt:'📅',workout:'💪'};
     var classes={B:'meal-pill',L:'meal-pill',S:'snack-pill',work:'work-pill',uni:'uni-pill',appt:'appt-pill',workout:'workout-pill'};
-    var labels={work:'WORK',uni:'UNI',appt:'APPT',workout:'GYM'};
+    // Only show labels for calendar types, not meal types
+    var labels={work:'WORK',uni:'UNI',appt:''};
     var prefix=icons[type]||'📌';
-    var label=labels[type]?'<b>'+labels[type]+'</b> ':'';
-    return'<div class="'+(classes[type]||'cal-pill')+'">'+prefix+' '+label+esc(text.length>9?text.slice(0,9)+'…':text)+'<button class="del-btn" style="font-size:.55rem;padding:0 2px" data-delday-type="'+type+'" data-delday-id="__ID__" data-dk="__DK__">✕</button></div>';
+    var labelStr=labels[type]!==undefined&&labels[type]?'<b style="font-size:.58rem">'+labels[type]+'</b> ':'';
+    var shortText=text.length>9?text.slice(0,9)+'…':text;
+    return'<div class="'+(classes[type]||'cal-pill')+'">'+prefix+' '+labelStr+esc(shortText)+'<button class="del-btn" style="font-size:.55rem;padding:0 2px" data-delday-id="__ID__" data-dk="__DK__">✕</button></div>';
   }
 
   var html='<div class="quote-box"><div class="quote-text">"'+esc(quote.q)+'"</div><div class="quote-author">— '+esc(quote.a)+'</div><div class="quote-btns"><button class="qbtn" id="newQuoteBtn">✨ New Quote</button><button class="qbtn" id="myQuoteBtn">✏️ My Own</button></div></div>'+
@@ -646,7 +707,16 @@ function renderMyPage(){
   '<button class="btn" data-apr="1">Save My Recipe</button></div></div>'+
   (function(){var myr=personalData.myRecipes?Object.values(personalData.myRecipes):[];
     if(!myr.length)return'<div class="emp"><span>📒</span>No private recipes yet!</div>';
-    return myr.map(function(r){return'<div class="rc"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><b style="font-size:.98rem">'+esc(r.name)+'</b><div style="margin-top:4px;font-size:.76rem;color:var(--muted)">'+esc(r.cat)+'</div></div><div style="display:flex;gap:4px"><button class="bsm bs" data-shr="'+r.id+'" style="font-size:.7rem">Share 📤</button><button class="del-btn" data-dpr="'+r.id+'">🗑</button></div></div><div class="rbs"><button class="bo" data-tp="'+r.id+'">▼ View</button><button class="bo bo-t" data-cp="'+r.id+'">👨‍🍳 Cook</button></div><div class="rb" id="prb'+r.id+'">'+(r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+(r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+'</div></div>';}).join('');
+    return myr.map(function(r){return'<div class="rc"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><b style="font-size:.98rem">'+esc(r.name)+'</b><div style="margin-top:4px;font-size:.76rem;color:var(--muted)">'+esc(r.cat)+'</div></div><div style="display:flex;gap:4px"><button class="bsm bs" data-shr="'+r.id+'" style="font-size:.7rem">Share 📤</button><button class="del-btn" data-dpr="'+r.id+'">🗑</button></div></div><div class="rbs"><button class="bo" data-tp="'+r.id+'">▼ View</button><button class="bo bo-t" data-cp="'+r.id+'">👨‍🍳 Cook</button><button class="bo bo-s" data-editpr="'+r.id+'" style="font-size:.75rem">✏️ Edit</button></div>'+
+      '<div class="edit-form" id="pef'+r.id+'">'+
+        '<input type="text" id="pen_'+r.id+'" value="'+esc(r.name)+'" placeholder="Recipe name">'+
+        '<input type="text" id="pec_'+r.id+'" value="'+esc(r.cat)+'" placeholder="Category">'+
+        '<input type="text" id="pet_'+r.id+'" value="'+esc((r.tags||[]).join(', '))+'" placeholder="Tags">'+
+        '<input type="text" id="pei_'+r.id+'" value="'+esc((r.ings||[]).join(', '))+'" placeholder="Ingredients">'+
+        '<textarea id="pes_'+r.id+'" placeholder="Method">'+esc(r.steps||'')+'</textarea>'+
+        '<div style="display:flex;gap:7px"><button class="bsm bt" data-savepr="'+r.id+'">Save</button><button class="bsm bx" data-cancelpr="'+r.id+'">Cancel</button></div>'+
+      '</div>'+
+      '<div class="rb" id="prb'+r.id+'">'+(r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+(r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+'</div></div>';}).join('');
   })();
 
   g('mp').innerHTML=html;
@@ -702,6 +772,21 @@ document.addEventListener('click',function(e){
   var tr=t.closest('[data-tr]');if(tr){var b=g('rb'+tr.dataset.tr);b.classList.toggle('o');tr.textContent=b.classList.contains('o')?'▲ Hide':'▼ View';return;}
   // personal recipe toggle
   var tp=t.closest('[data-tp]');if(tp){var pb=g('prb'+tp.dataset.tp);pb.classList.toggle('o');tp.textContent=pb.classList.contains('o')?'▲ Hide':'▼ View';return;}
+  // edit personal recipe open
+  var epr=t.closest('[data-editpr]');if(epr){var pef=g('pef'+epr.dataset.editpr);if(pef)pef.classList.toggle('o');return;}
+  // cancel personal recipe edit
+  var cpr=t.closest('[data-cancelpr]');if(cpr){var pef2=g('pef'+cpr.dataset.cancelpr);if(pef2)pef2.classList.remove('o');return;}
+  // save personal recipe edit
+  var spr=t.closest('[data-savepr]');if(spr){
+    var pid=spr.dataset.savepr;
+    var updates={};
+    updates.name=g('pen_'+pid).value.trim();
+    updates.cat=g('pec_'+pid).value.trim()||'General';
+    updates.tags=g('pet_'+pid).value.split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean);
+    updates.ings=g('pei_'+pid).value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+    updates.steps=g('pes_'+pid).value.trim();
+    db.ref('personal/'+un+'/myRecipes/'+pid).update(updates);
+    var pef3=g('pef'+pid);if(pef3)pef3.classList.remove('o');return;}
   // edit recipe open
   var er=t.closest('[data-editr]');if(er){var ef=g('ef'+er.dataset.editr);ef.classList.toggle('o');return;}
   // cancel edit
