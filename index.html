@@ -339,8 +339,12 @@ function dKey(d) { return d.toISOString().split('T')[0]; }
 function todayKey() { return dKey(new Date()); }
 
 function parseIng(s) {
+  // Match quantity with unit
   var m = s.match(/^([\d\u00BC\u00BD\u00BE\u2153\u2154\/\.\s]+\s*(?:g|kg|ml|tsp|tbsp|tbs|cups?|fl oz|oz|lbs?|lb|pinch|bunch|handful|slices?|cans?|tins?|pieces?|cloves?|sprigs?|stalks?|rashers?)\.?)\s+(.+)$/i);
   if (m && m[2] && m[2].length > 1) { return {q: m[1].trim(), n: m[2].trim()}; }
+  // Match plain number at start (e.g. "1 large carrot", "2 eggs")
+  var m2 = s.match(/^([\d\u00BC\u00BD\u00BE\u2153\u2154\/\.\s]+)\s+(.+)$/);
+  if (m2 && m2[2] && m2[2].length > 1) { return {q: m2[1].trim(), n: m2[2].trim()}; }
   return {q: '', n: s};
 }
 
