@@ -544,7 +544,7 @@ function showPinEntry(name){
   authMember=name;pinEntry='';
   el('authStep1').style.display='none';
   el('authStep2').style.display='block';
-  el('authName').textContent='Hello, '+name+'! Enter your PIN';
+  el('authName').textContent=members[name]&&members[name].pin?'Hello, '+name+'! Enter your PIN':'Hi '+name+'! Set your new PIN';
   updatePinDots('pinDots',0);
   el('pinErr').textContent='';
 }
@@ -557,6 +557,12 @@ function updatePinDots(id,len){
 function checkPin(){
   var m=members[authMember];
   if(!m){el('pinErr').textContent='Member not found.';return;}
+  // If no PIN set yet, allow them to set one now
+  if(!m.pin){
+    db.ref('members/'+authMember+'/pin').set(pinEntry);
+    loginAs(authMember,m.color||'#C97B63');
+    return;
+  }
   if(String(m.pin)===pinEntry){
     loginAs(authMember,m.color||'#C97B63');
   } else {
