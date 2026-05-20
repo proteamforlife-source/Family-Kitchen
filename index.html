@@ -444,9 +444,7 @@ function populateRecipePicker(){
 
 // COOK MODE - Light & friendly with quantities in steps
 function parseIng(s){
-  // Match quantity + unit, but NOT words like "large", "medium", "small", "whole" as units on their own
-  // Supports: g, kg, ml, l/L (only if followed by space+word), tsp, tbsp, tbs, T, ts, cups, oz, lb/lbs, pinch, bunch, handful, slices, cans, tins, pieces, cloves, sprigs, rashers, sheets
-  var m=s.match(/^([\d¼½¾⅓⅔\/\.\s]+\s*(?:g|kg|ml|(?:l|L)(?=\s)|tsp|tbsp|tbs|T(?=\s)|ts(?=\s)|cups?|fl\.?\s*oz|oz|lbs?|pinch|bunch|handful|slices?|cans?|tins?|pieces?|cloves?|sprigs?|stalks?|rashers?|sheets?|heads?|bunch(?:es)?)?\.?)\s+(.+)$/);
+  var m=s.match(/^([\d¼½¾⅓⅔\/\.\s]+\s*(?:g|kg|ml|tsp|tbsp|tbs|cups?|fl oz|oz|lbs?|pinch|bunch|handful|slices?|cans?|tins?|pieces?|cloves?|sprigs?|stalks?|rashers?|sheets?|heads?)\.?)\s+(.+)$/i);
   if(m&&m[2]&&m[2].length>1){return{q:m[1].trim(),n:m[2].trim(),full:s};}
   return{q:'',n:s,full:s};
 }
