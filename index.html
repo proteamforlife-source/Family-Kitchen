@@ -156,7 +156,7 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
 .plan-wnav span{font-weight:700;font-size:.85rem;color:var(--charcoal)}
 .plan-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px}
 .plan-day{background:#fff;border-radius:9px;padding:6px 4px;border:1px solid var(--border);min-width:0}
-.plan-day.tod{border-color:var(--terra);background:#fdf5f3}
+.plan-day.tod{border-color:var(--terra);background:#fdf5f3}.clickday{cursor:pointer;transition:box-shadow .15s}.clickday:hover{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .plan-day h4{font-size:.65rem;font-weight:700;text-align:center;color:var(--muted);margin-bottom:2px;text-transform:uppercase}
 .plan-date{font-size:.58rem;text-align:center;color:var(--muted);margin-bottom:4px}
 .plan-slot-lbl{font-size:.56rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:1px;margin-top:3px}
@@ -170,6 +170,7 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
 .cclaim.claimed{background:var(--sage);color:#fff}
 .add-meal-btn{background:none;border:1px dashed var(--border);width:100%;padding:2px;border-radius:5px;color:var(--muted);cursor:pointer;font-size:.58rem;margin-top:2px}
 .add-meal-btn:hover{border-color:var(--terra);color:var(--terra)}
+.dd-slot{margin-bottom:14px}.dd-slot-hdr{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border)}.dd-meal{background:var(--cream);border-radius:9px;padding:10px 12px;margin-bottom:7px;border:1px solid var(--border)}.dd-meal-name{font-weight:700;font-size:.92rem;margin-bottom:6px}.dd-meal-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.dd-cook-sel{padding:5px 9px;border:1.5px solid var(--border);border-radius:8px;font-size:.8rem;outline:none;font-family:inherit;background:#fff;flex:1}.dd-add{display:flex;gap:7px;margin-top:8px}.dd-add input{flex:1;padding:8px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;outline:none;font-family:inherit}.dd-rec-list{max-height:90px;overflow-y:auto;margin-bottom:6px}
 
 /* CHAT */
 #chatPanel{position:fixed;right:0;top:47px;bottom:0;width:320px;background:#fff;border-left:2px solid var(--border);z-index:200;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s}
@@ -381,6 +382,17 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
     <p style="font-size:.8rem;color:var(--muted);margin-bottom:7px">Select members:</p>
     <div class="mem-select" id="groupMemSelect"></div>
     <div class="mbrow"><button class="sm sx" id="groupCancel">Cancel</button><button class="sm st" id="groupCreate">Create</button></div>
+  </div>
+</div>
+
+<!-- Day detail modal -->
+<div class="minimod h" id="dayDetailMod">
+  <div class="minibox" style="max-width:380px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
+      <h3 id="dayDetailTitle" style="margin-bottom:0">Day</h3>
+      <button class="sm sx" id="dayDetailClose">✕</button>
+    </div>
+    <div id="dayDetailBody"></div>
   </div>
 </div>
 
@@ -1029,7 +1041,7 @@ function renderPlanner(){
           '<button class="add-meal-btn" data-addmeal="1" data-wk="'+wk+'" data-di="'+i+'" data-slot="'+sk+'">+ suggest</button>'+
         '</div>';
       }
-      return'<div class="plan-day'+(isT?' tod':'')+'"><h4>'+DAYS[i]+'</h4><div class="plan-date">'+d.getDate()+'/'+(d.getMonth()+1)+'</div>'+slotHtml('B','🌅')+slotHtml('L','☀️')+slotHtml('D','🍽️')+'</div>';
+      return'<div class="plan-day'+(isT?' tod':'')+' clickday" data-di="'+i+'" data-wk="'+wk+'" data-dk="'+dk+'"><h4>'+DAYS[i]+'</h4><div class="plan-date">'+d.getDate()+'/'+(d.getMonth()+1)+'</div>'+slotHtml('B','🌅')+slotHtml('L','☀️')+slotHtml('D','🍽️')+'</div>';
     }).join('');
   });
 }
@@ -1154,6 +1166,53 @@ el('chatPhotoInp').addEventListener('change',function(){
 });
 
 el('groupCancel').addEventListener('click',function(){el('groupMod').classList.add('h');groupSelectedMembers=[];});
+el('dayDetailClose').addEventListener('click',function(){el('dayDetailMod').classList.add('h');});
+
+function openDayDetail(di,wk,dk,dayData){
+  var d=getWeekDates(planOffset)[di];
+  el('dayDetailTitle').textContent=DAYS[di]+' '+d.getDate()+'/'+(d.getMonth()+1);
+  function slotDetailHtml(sk,lbl){
+    var meals=dayData[sk]?Object.values(dayData[sk]):[];
+    var memberOpts=Object.keys(members).map(function(n){return'<option value="'+esc(n)+'">'+(n===userName?'Me ('+esc(n)+')':esc(n))+'</option>';}).join('');
+    return'<div class="dd-slot"><div class="dd-slot-hdr">'+lbl+' '+{B:'Breakfast',L:'Lunch',D:'Dinner'}[sk]+'</div>'+
+      meals.map(function(m){
+        var vc=m.votes?Object.keys(m.votes).length:0;
+        var myV=m.votes&&m.votes[userName];
+        return'<div class="dd-meal">'+
+          '<div class="dd-meal-name">'+esc(m.name)+(m.url?' <a href="'+esc(m.url)+'" target="_blank" style="font-size:.75rem;color:var(--bl)">🔗</a>':'')+'</div>'+
+          '<div class="dd-meal-actions">'+
+            '<button class="vbtn'+(myV?' voted':'')+' sm" data-vote="'+m.id+'" data-wk="'+wk+'" data-di="'+di+'" data-slot="'+sk+'" style="font-size:.8rem;padding:5px 10px">👍 '+vc+'</button>'+
+            '<select class="dd-cook-sel" data-setcook="'+m.id+'" data-wk="'+wk+'" data-di="'+di+'" data-slot="'+sk+'">'+
+              '<option value="">👨‍🍳 Who's cooking?</option>'+memberOpts+
+            '</select>'+
+            (m.cooker?'<span style="font-size:.78rem;color:var(--sage);font-weight:700">✅ '+esc(m.cooker)+'</span>':'')+
+            '<button class="xbtn" data-delmeal="'+m.id+'" data-wk="'+wk+'" data-di="'+di+'" data-slot="'+sk+'">🗑</button>'+
+          '</div></div>';
+      }).join('')+
+      '<div class="dd-add">'+
+        '<input type="text" placeholder="+ Add meal..." id="ddadd-'+sk+'-'+di+'">'+
+        '<button class="sm st" data-ddaddmeal="'+sk+'" data-wk="'+wk+'" data-di="'+di+'">Add</button>'+
+      '</div></div>';
+  }
+  el('dayDetailBody').innerHTML=slotDetailHtml('B','🌅')+slotDetailHtml('L','☀️')+slotDetailHtml('D','🍽️');
+  // Cook select change handlers
+  el('dayDetailBody').querySelectorAll('[data-setcook]').forEach(function(sel){
+    if(sel._bound)return;sel._bound=true;
+    sel.addEventListener('change',function(){
+      var cook=sel.value;if(!cook)return;
+      db.ref('planner/'+sel.dataset.wk+'/'+sel.dataset.di+'/'+sel.dataset.slot+'/'+sel.dataset.setcook+'/cooker').set(cook);
+      setTimeout(function(){refreshDayDetail(di,wk,dk);},400);
+    });
+  });
+  el('dayDetailMod').classList.remove('h');
+}
+
+function refreshDayDetail(di,wk,dk){
+  db.ref('planner/'+wk).once('value',function(snap){
+    var data=snap.val()||{};
+    openDayDetail(di,wk,dk,data[di]||{});
+  });
+}
 el('groupCreate').addEventListener('click',function(){
   var name=el('groupName').value.trim();if(!name){alert('Enter a group name.');return;}
   if(groupSelectedMembers.length===0){alert('Select at least one member.');return;}
@@ -1408,11 +1467,13 @@ document.addEventListener('click',function(e){
   var dadd=t.closest('[data-dadd]');if(dadd){addDish(dadd.dataset.dadd);return;}
   var daci=t.closest('[data-recname]');if(daci){var evid2=daci.dataset.evid;var inp2=el('dacinp-'+evid2);if(inp2)inp2.value=daci.dataset.recname;var dal=el('daclist-'+evid2);if(dal)dal.style.display='none';return;}
   // Planner
+  var clickday=t.closest('.clickday');if(clickday&&!t.closest('[data-addmeal]')&&!t.closest('[data-vote]')&&!t.closest('[data-cook]')&&!t.closest('[data-delmeal]')&&!t.closest('a')){var cdi=parseInt(clickday.dataset.di);var cwk=clickday.dataset.wk;var cdk=clickday.dataset.dk;db.ref('planner/'+cwk+'/'+cdi).once('value',function(snap){openDayDetail(cdi,cwk,cdk,snap.val()||{});});return;}
   var addmeal=t.closest('[data-addmeal]');if(addmeal){if(!userName){alert('Sign in first!');return;}mealCtx={wk:addmeal.dataset.wk,di:addmeal.dataset.di,slot:addmeal.dataset.slot};el('mealModTitle').textContent='Suggest for '+DAYS[parseInt(addmeal.dataset.di)];el('mealModInp').value='';el('mealModUrl').value='';el('mealMod').classList.remove('h');setTimeout(function(){el('mealModInp').focus();},80);return;}
   var mealrec=t.closest('[data-mealrec]');if(mealrec){el('mealModInp').value=mealrec.dataset.mealrec;el('mealSugList').innerHTML='';el('mealSugList').style.display='none';return;}
   var vote=t.closest('[data-vote]');if(vote){if(!userName)return;var vref=db.ref('planner/'+vote.dataset.wk+'/'+vote.dataset.di+'/'+vote.dataset.slot+'/'+vote.dataset.vote+'/votes/'+userName);vref.once('value',function(s){if(s.val())vref.remove();else vref.set(true);});return;}
   var cook=t.closest('[data-cook]');if(cook){if(!userName)return;var cref=db.ref('planner/'+cook.dataset.wk+'/'+cook.dataset.di+'/'+cook.dataset.slot+'/'+cook.dataset.cook+'/cooker');cref.once('value',function(s){cref.set(s.val()===userName?'':userName);});return;}
   var delmeal=t.closest('[data-delmeal]');if(delmeal){db.ref('planner/'+delmeal.dataset.wk+'/'+delmeal.dataset.di+'/'+delmeal.dataset.slot+'/'+delmeal.dataset.delmeal).remove();return;}
+  var ddadd=t.closest('[data-ddaddmeal]');if(ddadd){var slot=ddadd.dataset.ddaddmeal;var ddi=ddadd.dataset.di;var dwk=ddadd.dataset.wk;var inp=el('ddadd-'+slot+'-'+ddi);if(!inp||!inp.value.trim())return;var mid='m'+Date.now();db.ref('planner/'+dwk+'/'+ddi+'/'+slot+'/'+mid).set({id:mid,name:inp.value.trim(),votes:{},cooker:'',by:userName});inp.value='';setTimeout(function(){refreshDayDetail(parseInt(ddi),dwk,'');},400);return;}
   // Chat
   var convBtn=t.closest('[data-conv]');if(convBtn&&convBtn.closest('#chatTabs')){switchConvo(convBtn.dataset.conv,convBtn.dataset.cname);return;}
   var gmem=t.closest('[data-gmem]');if(gmem&&gmem.closest('#groupMemSelect')){var gn=gmem.dataset.gmem;var gi=groupSelectedMembers.indexOf(gn);if(gi>-1)groupSelectedMembers.splice(gi,1);else groupSelectedMembers.push(gn);buildGroupMemSelect();return;}
