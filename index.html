@@ -42,7 +42,7 @@ header h1{font-size:1.1rem;font-weight:700}
 .upill{background:rgba(255,255,255,.25);padding:4px 11px;border-radius:20px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:5px}
 
 nav{background:#fff;border-bottom:2px solid var(--border);display:flex;position:sticky;top:47px;z-index:99;overflow-x:auto}
-nav button{flex:1;min-width:55px;padding:10px 3px;border:none;background:none;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav{flex-wrap:wrap}nav button{flex:1;min-width:60px;padding:7px 4px;border:none;background:none;font-size:.62rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px}.nav-icon{font-size:1.2rem;line-height:1}.nav-lbl{font-size:.58rem;font-weight:700;white-space:nowrap}
 nav button.on{color:var(--terra);border-bottom-color:var(--terra)}
 
 main{max-width:720px;margin:0 auto;padding:14px 12px}
@@ -433,13 +433,13 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
   </div>
 </header>
 <nav>
-  <button class="on" id="tb-d">🏠 Home</button>
-  <button id="tb-r">📖 Recipes</button>
-  <button id="tb-p">🍽️ Planner</button>
-  <button id="tb-e">🗓️ Events</button>
-  <button id="tb-t">🧪 Testing</button>
-  <button id="tb-s">🛒 Shopping</button>
-  <button id="tb-m">👤 My Page</button>
+  <button class="on" id="tb-d"><span class="nav-icon">🏠</span><span class="nav-lbl">Home</span></button>
+  <button id="tb-r"><span class="nav-icon">📖</span><span class="nav-lbl">Recipes</span></button>
+  <button id="tb-p"><span class="nav-icon">🍽️</span><span class="nav-lbl">Planner</span></button>
+  <button id="tb-e"><span class="nav-icon">🗓️</span><span class="nav-lbl">Events</span></button>
+  <button id="tb-t"><span class="nav-icon">🧪</span><span class="nav-lbl">Testing</span></button>
+  <button id="tb-s"><span class="nav-icon">🛒</span><span class="nav-lbl">Shopping</span></button>
+  <button id="tb-m"><span class="nav-icon">👤</span><span class="nav-lbl">My Page</span></button>
 </nav>
 
 <main>
