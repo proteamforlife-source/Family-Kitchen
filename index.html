@@ -257,7 +257,7 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
 
 /* DASHBOARD */
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.dash-card{background:#fff;border-radius:13px;padding:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.dash-card{background:#fff;border-radius:13px;padding:14px;border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}.dash-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .dash-card.full{grid-column:1/-1}
 .dash-card h3{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px}
 .dash-dinner{font-size:1rem;font-weight:700;color:var(--terra)}
@@ -794,32 +794,32 @@ function renderDashboard(){
 
           '<div class="dash-grid">'+
             // Tonight's dinner
-            '<div class="dash-card">'+
-              '<h3>🍽️ Tonight\'s Dinner</h3>'+
+            '<div class="dash-card" data-switchtab="p">'+
+              '<h3 style="display:flex;justify-content:space-between">🍽️ Tonight&apos;s Dinner<span style="color:var(--border)">›</span></h3>'+
               (winner
-                ? '<div class="dash-dinner">'+esc(winner.name)+'</div>'+(winner.url?'<a href="'+esc(winner.url)+'" target="_blank" style="font-size:.75rem;color:var(--bl)">🔗 Recipe link</a>':'')+'<div class="dash-sub">'+(winner.cooker?'👨‍🍳 '+esc(winner.cooker)+' is cooking':maxV>0?maxV+' vote'+(maxV>1?'s':''):'')+'</div>'
+                ? '<div class="dash-dinner">'+esc(winner.name)+'</div>'+(winner.url?'<a href="'+esc(winner.url)+'" target="_blank" style="font-size:.75rem;color:var(--bl)">🔗 Recipe link</a>':'')+dinners.map(function(m){return'<div class="dash-sub" style="margin-top:4px">'+(m.cooker?'👨‍🍳 <b>'+esc(m.cooker)+'</b> is cooking '+esc(m.name):'<span style="color:var(--muted)">'+esc(m.name)+' — nobody claimed cooking yet</span>')+'</div>';}).join('')
                 : '<div style="color:var(--muted);font-size:.84rem">Nothing planned yet — <span style="color:var(--terra);cursor:pointer" onclick="switchTab(\'p\')">add to planner</span></div>')+
             '</div>'+
 
             // Next event
-            '<div class="dash-card">'+
-              '<h3>📅 Next Event</h3>'+
+            '<div class="dash-card" data-switchtab="e">'+
+              '<h3 style="display:flex;justify-content:space-between">📅 Next Event<span style="color:var(--border)">›</span></h3>'+
               (nextEv
                 ? '<div style="font-weight:700;color:var(--terra);font-size:.9rem">'+esc(nextEv.name)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">'+fmtDate(nextEv.date)+'</div>'+(nextEv.desc?'<div style="font-size:.76rem;color:var(--muted);margin-top:2px">'+esc(nextEv.desc)+'</div>':'')
                 : '<div style="color:var(--muted);font-size:.84rem">No upcoming events</div>')+
             '</div>'+
 
             // Today's schedule
-            '<div class="dash-card">'+
-              '<h3>📋 Today\'s Schedule</h3>'+
+            '<div class="dash-card" data-switchtab="m">'+
+              '<h3 style="display:flex;justify-content:space-between">📋 Todays Schedule<span style="color:var(--border)">›</span></h3>'+
               (todayItems.length
                 ? todayItems.map(function(item){return'<div class="dash-sched-item mp-'+item.type+'">'+(typeIcons[item.type]||'📌')+' '+esc(item.text)+'</div>';}).join('')
                 : '<div style="color:var(--muted);font-size:.84rem">Nothing scheduled — check My Page</div>')+
             '</div>'+
 
             // Recent messages
-            '<div class="dash-card">'+
-              '<h3>💬 Recent Messages</h3>'+
+            '<div class="dash-card" data-switchchat="1">'+
+              '<h3 style="display:flex;justify-content:space-between">💬 Recent Messages<span style="color:var(--border)">›</span></h3>'+
               (msgs.length
                 ? msgs.map(function(m){var col=members[m.by]?members[m.by].color:'#8FA68E';return'<div class="dash-msg" onclick="openChat()">'+avt(m.by,col,22)+'<span class="dash-msg-txt">'+esc(m.by)+': '+(m.photo?'📷 Photo':esc(m.text))+'</span><span class="dash-msg-time">'+new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join('')
                 : '<div style="color:var(--muted);font-size:.84rem">No messages yet</div>')+
@@ -1418,6 +1418,8 @@ document.addEventListener('click',function(e){
   var vi=t.closest('[data-viewimg]');if(vi){el('imgModalImg').src=vi.dataset.viewimg;el('imgModal').classList.add('on');return;}
 
   // Dinner question
+  var st=t.closest('[data-switchtab]');if(st){switchTab(st.dataset.switchtab);return;}
+  var sc2=t.closest('[data-switchchat]');if(sc2){openChat();return;}
   var dqa=t.closest('[data-dqa]');if(dqa){if(!userName)return;db.ref('dinnerQ/'+todayKey()+'/'+userName).set(dqa.dataset.dqa);setTimeout(renderDashboard,300);return;}
 
   // Formatter use
