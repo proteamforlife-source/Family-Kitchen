@@ -374,6 +374,15 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
   </div>
 </div>
 
+<!-- Add members modal -->
+<div class="minimod h" id="addMembersMod">
+  <div class="minibox">
+    <h3 id="addMembersTitle">Add Members</h3>
+    <div class="mem-select" id="addMembersSelect"></div>
+    <div class="mbrow"><button class="sm sx" id="addMembersCancel">Cancel</button><button class="sm st" id="addMembersSave">Add</button></div>
+  </div>
+</div>
+
 <!-- New group modal -->
 <div class="minimod h" id="groupMod">
   <div class="minibox">
@@ -575,6 +584,7 @@ var myPageView='week';var monthOffset=0;
 var selectedPresetTags=[],pinEntry='',newPinEntry='',authMember=null;
 var currentConvoId='family',currentConvoName='Family Chat',chatListeners={};
 var groupSelectedMembers=[];
+var addMembersGid='';var addMembersCurrent={};var addMembersSelected=[];
 var plannerRef=null;
 var currentPrintRec=null;
 
@@ -770,18 +780,39 @@ function renderDashboard(){
         todayItems=Object.values(personalData.days[today].items);
       }
 
-      // Recent messages
-      db.ref('chats/family').limitToLast(5).once('value',function(msgSnap){
-        var msgs=[];msgSnap.forEach(function(c){msgs.push(c.val());});msgs.reverse();
+      // Recent messages - collect from ALL convos
+      var typeIcons={B:'🌅',L:'☀️',S:'🍎',work:'💼',uni:'🎓',appt:'📅',workout:'💪'};
+      var answersList=Object.entries(dqData).map(function(e){
+        var col=members[e[0]]?members[e[0]].color:'#8FA68E';
+        return'<span class="dq-answer" style="background:rgba(255,255,255,.2)">'+avt(e[0],col,16)+'<span style="margin-left:3px;font-size:.75rem">'+esc(e[0])+': '+(e[1]==='yes'?'Yes':'No')+'</span></span>';
+      }).join('');
+      var lastRead=personalData.lastRead||{};
 
-        var typeIcons={B:'🌅',L:'☀️',S:'🍎',work:'💼',uni:'🎓',appt:'📅',workout:'💪'};
+      db.ref('chatGroups').once('value',function(grpSnap){
+        var myGroups=['family'];
+        grpSnap.forEach(function(c){var g=c.val();if(g.members&&g.members[userName])myGroups.push(g.id);});
+        // Also add DM convos
+        Object.keys(members).forEach(function(n){if(n!==userName)myGroups.push([userName,n].sort().join('_'));});
 
-        var answersList=Object.entries(dqData).map(function(e){
-          var col=members[e[0]]?members[e[0]].color:'#8FA68E';
-          return'<span class="dq-answer" style="background:rgba(255,255,255,.2)">'+avt(e[0],col,16)+'<span style="margin-left:3px;font-size:.75rem">'+esc(e[0])+': '+(e[1]==='yes'?'✅ Yes':'❌ No')+'</span></span>';
-        }).join('');
+        var allMsgs=[];var pending=myGroups.length;
+        if(!pending){buildDash([],answersList,todayItems,typeIcons,winner,dinners,nextEv,dqData);return;}
+        myGroups.forEach(function(cid){
+          db.ref('chats/'+cid).limitToLast(10).once('value',function(snap){
+            snap.forEach(function(c){var m=c.val();m._cid=cid;allMsgs.push(m);});
+            pending--;
+            if(pending===0){
+              allMsgs.sort(function(a,b){return b.ts-a.ts;});
+              buildDash(allMsgs,answersList,todayItems,typeIcons,winner,dinners,nextEv,dqData,lastRead,myGroups);
+            }
+          });
+        });
+      });
+    });
+  });
+}
 
-        var todayFmt=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+function buildDash(allMsgs,answersList,todayItems,typeIcons,winner,dinners,nextEv,dqData,lastRead,myGroups){
+      var todayFmt=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
         el('dashContent').innerHTML=
           '<div style="font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;text-align:center;letter-spacing:.03em">📅 '+todayFmt+'</div>'+
           // Dinner question
@@ -820,15 +851,25 @@ function renderDashboard(){
 
             // Recent messages
             '<div class="dash-card" data-switchchat="1">'+
-              '<h3 style="display:flex;justify-content:space-between">💬 Recent Messages<span style="color:var(--border)">›</span></h3>'+
-              (msgs.length
-                ? msgs.map(function(m){var col=members[m.by]?members[m.by].color:'#8FA68E';return'<div class="dash-msg" onclick="openChat()">'+avt(m.by,col,22)+'<span class="dash-msg-txt">'+esc(m.by)+': '+(m.photo?'📷 Photo':esc(m.text))+'</span><span class="dash-msg-time">'+new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join('')
+              '<h3 style="display:flex;justify-content:space-between">💬 Recent Messages'+(function(){var u=allMsgs.filter(function(m){return m.by!==userName&&m.ts>(lastRead[m._cid]||0);}).length;return u?'<span style="background:var(--re);color:#fff;border-radius:10px;padding:1px 7px;font-size:.72rem">'+u+' new</span>':'<span style="color:var(--border)">›</span>';}())+'</h3>'+
+              (allMsgs.length
+                ? allMsgs.slice(0,6).map(function(m){
+                    var col=members[m.by]?members[m.by].color:'#8FA68E';
+                    var isUnread=m.by!==userName&&m.ts>(lastRead[m._cid]||0);
+                    var convName=m._cid==='family'?'Family Chat':members[m._cid.replace(userName,'').replace('_','')]?m._cid.replace(userName,'').replace('_',''):'Group';
+                    return'<div class="dash-msg" data-switchchat="1" style="'+(isUnread?'background:#fff8f5;border-radius:8px;padding:4px 6px;margin:-2px -4px;':'')+'">'+
+                      avt(m.by,col,22)+
+                      '<div style="flex:1;min-width:0">'+
+                        '<span class="dash-msg-txt" style="'+(isUnread?'font-weight:700;color:var(--charcoal)':'')+'">'+(m._cid!=='family'?'<span style="font-size:.68rem;color:var(--muted)">'+esc(convName)+'</span> ':'')+''+esc(m.by)+': '+(m.photo?'Photo':esc(m.text))+'</span>'+
+                      '</div>'+
+                      '<span class="dash-msg-time">'+new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</span>'+
+                    '</div>';
+                  }).join('')
                 : '<div style="color:var(--muted);font-size:.84rem">No messages yet</div>')+
             '</div>'+
           '</div>';
-      });
-    });
-  });
+      // Mark as read when user opens chat
+      if(lastRead){db.ref('personal/'+userName+'/lastRead').set(Object.assign({},lastRead,(function(){var r={};if(myGroups)myGroups.forEach(function(cid){r[cid]=Date.now();});return r;})()));}
 }
 
 function openChat(){el('chatPanel').classList.add('open');}
@@ -1102,7 +1143,7 @@ function buildChatTabs(){
       html+='<button class="chat-tab'+(currentConvoId===cid?' on':'')+'" data-conv="'+esc(cid)+'" data-cname="'+esc(n)+'">'+avt(n,members[n]?members[n].color:'#8FA68E',16)+'<span>'+esc(n)+'</span></button>';
     });
     groups.forEach(function(g){
-      html+='<button class="chat-tab'+(currentConvoId===g.id?' on':'')+'" data-conv="'+esc(g.id)+'" data-cname="'+esc(g.name)+'">👥 '+esc(g.name)+'</button>';
+      html+='<button class="chat-tab'+(currentConvoId===g.id?' on':'')+'" data-conv="'+esc(g.id)+'" data-cname="'+esc(g.name)+'" data-gid="'+esc(g.id)+'">👥 '+esc(g.name)+'</button>';
     });
     html+='<button class="chat-tab" id="newGroupBtn">+ Group</button>';
     tabs.innerHTML=html;
@@ -1121,12 +1162,25 @@ function listenToConvo(convId){
   chatListeners[convId]=ref;
 }
 
-function switchConvo(convId,convName){
+function switchConvo(convId,convName,gid){
   currentConvoId=convId;currentConvoName=convName;
-  el('chatTitle').textContent='💬 '+convName;
+  el('chatTitle').innerHTML='💬 '+esc(convName)+(gid?'<button onclick="openAddMembers(''+gid+'')" style="background:rgba(255,255,255,.25);border:none;color:#fff;font-size:.72rem;padding:3px 8px;border-radius:8px;cursor:pointer;margin-left:8px">+ Members</button>':'');
   el('chatMessages').innerHTML='<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:20px">Loading...</div>';
   el('chatTabs').querySelectorAll('.chat-tab').forEach(function(t){t.classList.toggle('on',t.dataset.conv===convId);});
   listenToConvo(convId);
+  // Mark this convo as read
+  if(userName)db.ref('personal/'+userName+'/lastRead/'+convId).set(Date.now());
+}
+
+function openAddMembers(gid){
+  db.ref('chatGroups/'+gid).once('value',function(snap){
+    var g=snap.val();if(!g)return;
+    addMembersGid=gid;
+    addMembersCurrent=g.members||{};
+    el('addMembersTitle').textContent='Add to '+g.name;
+    buildAddMembersSelect();
+    el('addMembersMod').classList.remove('h');
+  });
 }
 
 function renderMsgs(msgs){
@@ -1224,6 +1278,23 @@ el('groupCreate').addEventListener('click',function(){
   el('groupMod').classList.add('h');el('groupName').value='';groupSelectedMembers=[];
   buildChatTabs();switchConvo(gid,name);el('chatPanel').classList.add('open');
 });
+el('addMembersCancel').addEventListener('click',function(){el('addMembersMod').classList.add('h');addMembersSelected=[];});
+el('addMembersSave').addEventListener('click',function(){
+  if(!addMembersGid||!addMembersSelected.length){alert('Select at least one member.');return;}
+  var updates={};
+  addMembersSelected.forEach(function(n){updates[n]=true;});
+  db.ref('chatGroups/'+addMembersGid+'/members').update(updates);
+  el('addMembersMod').classList.add('h');addMembersSelected=[];
+  buildChatTabs();alert('Members added!');
+});
+
+function buildAddMembersSelect(){
+  var w=el('addMembersSelect');if(!w)return;
+  w.innerHTML=Object.keys(members).filter(function(n){return n!==userName&&!addMembersCurrent[n];}).map(function(n){
+    var m=members[n];var on=addMembersSelected.indexOf(n)>-1;
+    return'<div class="mem-chip'+(on?' on':'')+' data-addmem="'+esc(n)+'" style="border-color:'+(on?m.color:'var(--border)')+'">'+avt(n,m.color,18)+'<span>'+esc(n)+'</span></div>';
+  }).join('')||(Object.keys(members).filter(function(n){return n!==userName&&!addMembersCurrent[n];}).length===0?'<p style="color:var(--muted);font-size:.84rem">All members already in this group!</p>':'');
+}
 
 // ── EVENTS ──
 el('addEvBtn').addEventListener('click',function(){
@@ -1586,7 +1657,8 @@ document.addEventListener('click',function(e){
   var delmeal=t.closest('[data-delmeal]');if(delmeal){db.ref('planner/'+delmeal.dataset.wk+'/'+delmeal.dataset.di+'/'+delmeal.dataset.slot+'/'+delmeal.dataset.delmeal).remove();return;}
   var ddadd=t.closest('[data-ddaddmeal]');if(ddadd){var slot=ddadd.dataset.ddaddmeal;var ddi=ddadd.dataset.di;var dwk=ddadd.dataset.wk;var inp=el('ddadd-'+slot+'-'+ddi);if(!inp||!inp.value.trim())return;var mid='m'+Date.now();db.ref('planner/'+dwk+'/'+ddi+'/'+slot+'/'+mid).set({id:mid,name:inp.value.trim(),votes:{},cooker:'',by:userName});inp.value='';setTimeout(function(){refreshDayDetail(parseInt(ddi),dwk,'');},400);return;}
   // Chat
-  var convBtn=t.closest('[data-conv]');if(convBtn&&convBtn.closest('#chatTabs')){switchConvo(convBtn.dataset.conv,convBtn.dataset.cname);return;}
+  var convBtn=t.closest('[data-conv]');if(convBtn&&convBtn.closest('#chatTabs')){switchConvo(convBtn.dataset.conv,convBtn.dataset.cname,convBtn.dataset.gid||'');return;}
+  var addmem=t.closest('[data-addmem]');if(addmem&&addmem.closest('#addMembersSelect')){var an=addmem.dataset.addmem;var ai=addMembersSelected.indexOf(an);if(ai>-1)addMembersSelected.splice(ai,1);else addMembersSelected.push(an);buildAddMembersSelect();return;}
   var gmem=t.closest('[data-gmem]');if(gmem&&gmem.closest('#groupMemSelect')){var gn=gmem.dataset.gmem;var gi=groupSelectedMembers.indexOf(gn);if(gi>-1)groupSelectedMembers.splice(gi,1);else groupSelectedMembers.push(gn);buildGroupMemSelect();return;}
   var dsh=t.closest('[data-dsh]');if(dsh){if(userName!==ADMIN)return;db.ref('shopping/'+dsh.dataset.dsh).remove();return;}
   var addd=t.closest('[data-addd]');if(addd){dayCtx={dk:addd.dataset.addd};el('dayModTitle').textContent='Add to '+addd.dataset.addd;el('dayModInp').value='';el('dayModType').value='B';el('dayMod').classList.remove('h');setTimeout(function(){el('dayModInp').focus();},80);return;}
