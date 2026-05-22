@@ -329,10 +329,21 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
       <p>Create your account</p>
       <input class="auth-inp" id="newName" type="text" placeholder="Your name..." maxlength="20">
       <select class="auth-inp" id="newColor">
-        <option value="#C97B63">🟤 Terracotta</option><option value="#8FA68E">🟢 Sage Green</option>
-        <option value="#3a7bd5">🔵 Blue</option><option value="#9b59b6">🟣 Purple</option>
-        <option value="#e67e22">🟠 Orange</option><option value="#e91e8c">🩷 Pink</option>
-        <option value="#16a085">🩵 Teal</option><option value="#2c3e50">⚫ Charcoal</option>
+        <option value="#B8967E">Caramel</option>
+        <option value="#A67868">Warm Rust</option>
+        <option value="#8A7A6E">Driftwood</option>
+        <option value="#6E6560">Pebble</option>
+        <option value="#C4A882">Sand</option>
+        <option value="#B8A090">Blush Taupe</option>
+        <option value="#C49A9A">Dusty Rose</option>
+        <option value="#D4A5A5">Soft Rose</option>
+        <option value="#B89AB0">Mauve</option>
+        <option value="#9A8FB0">Soft Lavender</option>
+        <option value="#8FA0B8">Steel Blue</option>
+        <option value="#7A9BAA">Dusty Blue</option>
+        <option value="#8AADA8">Sage Teal</option>
+        <option value="#2A2218">Espresso</option>
+        <option value="#5C5048">Dark Mocha</option>
       </select>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;text-align:center">Choose a 4-digit PIN:</p>
       <div class="pin-wrap" id="newPinDots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
@@ -575,10 +586,10 @@ var db=firebase.database();
 var ADMIN='Mum';
 var PRESET_TAGS=['Slow Cooker','Sweet Treats','Cakes','Asian Inspired','Lebanese','Middle Eastern','Mexican','Salads','Drinks','Desserts','Bars','High Protein','Low Carb','GF','DF','Quick','Whole Food','Kid Friendly','Meal Prep'];
 var PRESET_CATS=['Breakfast','Mains','Chicken','Beef','Lamb','Pork','Seafood','Vegetarian','Vegan','Salads','Soups','Sides','Snacks','Desserts','Sweet Treats','Cakes','Breads','Drinks','Other'];
-var EVENT_COLORS=['#C97B63','#8FA68E','#3a7bd5','#9b59b6','#e67e22','#16a085','#c0392b','#2c3e50'];
+var EVENT_COLORS=['#B8967E','#A67868','#8A7A6E','#9A8FB0','#7A9BAA','#C49A9A','#8AADA8','#5C5048'];
 var QUOTES=[{q:"Let food be thy medicine.",a:"Hippocrates"},{q:"Your body is a reflection of your lifestyle.",a:"Don Tolman"},{q:"The mind is everything. What you think you become.",a:"Joe Dispenza"},{q:"Whole foods nourish the whole person.",a:"Don Tolman"},{q:"The cleaner you eat, the clearer you think.",a:"Don Tolman"},{q:"Hydration is the foundation of health.",a:"Don Tolman"},{q:"Let your food be your medicine.",a:"Barbara O'Neill"},{q:"Processed foods cause inflammation. Whole foods bring healing.",a:"Barbara O'Neill"},{q:"Your immune system is your best doctor.",a:"Barbara O'Neill"},{q:"If you want a new outcome, break the habit of being yourself.",a:"Joe Dispenza"},{q:"Where you place your attention is where you place your energy.",a:"Joe Dispenza"},{q:"You are the creator of your own reality.",a:"Joe Dispenza"},{q:"Take care of your body.",a:"Jim Rohn"},{q:"Eating well is a form of self-respect.",a:"Unknown"},{q:"Progress, not perfection.",a:"Unknown"},{q:"Small steps every day lead to big changes.",a:"Unknown"},{q:"Family is not an important thing. It's everything.",a:"Michael J. Fox"},{q:"Cooking is love made visible.",a:"Unknown"},{q:"The kitchen is the heart of the home.",a:"Unknown"},{q:"Eat food. Not too much. Mostly plants.",a:"Michael Pollan"}];
 
-var userName='',userColor='#C97B63',recipes=[],events=[],shopItems=[],testRecipes=[],members={},personalData={};
+var userName='',userColor='#B8967E',recipes=[],events=[],shopItems=[],testRecipes=[],members={},personalData={};
 var weekOffset=0,planOffset=0,ckSteps=[],ckIdx=0,ckAll=false,dayCtx={},activeTag='',activeCat='';
 var myPageView='week';var monthOffset=0;
 var selectedPresetTags=[],pinEntry='',newPinEntry='',authMember=null;
@@ -606,7 +617,7 @@ function parseIng(s){
 
 function avt(name,color,size){
   size=size||32;var fs=Math.round(size*0.42);
-  return'<div class="mavatar" style="background:'+(color||'#8FA68E')+';width:'+size+'px;height:'+size+'px;font-size:'+fs+'px">'+esc((name||'?').charAt(0).toUpperCase())+'</div>';
+  return'<div class="mavatar" style="background:'+(color||'#8A7A6E')+';width:'+size+'px;height:'+size+'px;font-size:'+fs+'px">'+esc((name||'?').charAt(0).toUpperCase())+'</div>';
 }
 
 // ── AUTH ──
@@ -643,8 +654,8 @@ function updDots(id,len){el(id).querySelectorAll('.pin-dot').forEach(function(d,
 
 function checkPin(){
   var m=members[authMember];if(!m){el('pinErr').textContent='Not found.';return;}
-  if(!m.pin){db.ref('members/'+authMember+'/pin').set(pinEntry);doLogin(authMember,m.color||'#C97B63');return;}
-  if(String(m.pin)===pinEntry){doLogin(authMember,m.color||'#C97B63');}
+  if(!m.pin){db.ref('members/'+authMember+'/pin').set(pinEntry);doLogin(authMember,m.color||'#B8967E');return;}
+  if(String(m.pin)===pinEntry){doLogin(authMember,m.color||'#B8967E');}
   else{el('pinErr').textContent='Wrong PIN. Try again.';pinEntry='';updDots('pinDots',0);}
 }
 
@@ -702,7 +713,7 @@ function init(){
     snap.forEach(function(c){members[c.key]=c.val();});
     renderMemberList();
     // Now attempt auto-login
-    var sn=localStorage.getItem('fk_name');var sc=localStorage.getItem('fk_color')||'#C97B63';
+    var sn=localStorage.getItem('fk_name');var sc=localStorage.getItem('fk_color')||'#B8967E';
     if(sn&&members[sn]){
       userName=sn;userColor=sc;
       el('authScreen').classList.add('h');
@@ -961,7 +972,7 @@ function renderRecipes(){
         (r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+
         (r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+
         '<h4 style="margin-top:9px">Family Notes</h4>'+
-        notes.map(function(n){var bg=n.color||'#8FA68E';return'<div class="note"><span>'+esc(n.text)+'</span><div style="flex-shrink:0"><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span>'+(isAdmin?'<button class="xbtn" data-delnote="'+n.id+'" data-recid="'+r.id+'">x</button>':'')+'</div></div>';}).join('')+
+        notes.map(function(n){var bg=n.color||'#8A7A6E';return'<div class="note"><span>'+esc(n.text)+'</span><div style="flex-shrink:0"><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span>'+(isAdmin?'<button class="xbtn" data-delnote="'+n.id+'" data-recid="'+r.id+'">x</button>':'')+'</div></div>';}).join('')+
         '<div class="nadd"><input type="text" placeholder="Add a note..." id="ni-'+r.id+'"><button class="sm ss" data-addnote="'+r.id+'">Add</button></div>'+
       '</div>'+
     '</div>';
@@ -1193,7 +1204,7 @@ function renderMsgs(msgs){
       :'<div class="msg-text">'+esc(m.text)+'</div>';
     return'<div class="msg-bubble'+(mine?' mine':' theirs')+'">'+
       content+
-      '<div class="msg-meta">'+(mine?'':('<span style="color:'+(m.color||'#8FA68E')+';font-weight:600">'+esc(m.by)+'</span> · '))+new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</div>'+
+      '<div class="msg-meta">'+(mine?'':('<span style="color:'+(m.color||'#8A7A6E')+';font-weight:600">'+esc(m.by)+'</span> · '))+new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</div>'+
     '</div>';
   }).join('');
   c.scrollTop=c.scrollHeight;
@@ -1393,7 +1404,7 @@ function renderTestRecipes(){
         (r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+
         (r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+
         '<h4 style="margin-top:7px">Feedback</h4>'+
-        notes.map(function(n){var bg=n.color||'#8FA68E';return'<div class="note"><span>'+esc(n.text)+'</span><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span></div>';}).join('')+
+        notes.map(function(n){var bg=n.color||'#8A7A6E';return'<div class="note"><span>'+esc(n.text)+'</span><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span></div>';}).join('')+
         '<div class="nadd"><input type="text" placeholder="Leave feedback..." id="tni-'+r.id+'"><button class="sm ss" data-addtnote="'+r.id+'">Add</button></div>'+
       '</div>'+
     '</div>';
