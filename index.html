@@ -1164,7 +1164,7 @@ function listenToConvo(convId){
 
 function switchConvo(convId,convName,gid){
   currentConvoId=convId;currentConvoName=convName;
-  el('chatTitle').innerHTML='💬 '+esc(convName)+(gid?'<button onclick="openAddMembers(''+gid+'')" style="background:rgba(255,255,255,.25);border:none;color:#fff;font-size:.72rem;padding:3px 8px;border-radius:8px;cursor:pointer;margin-left:8px">+ Members</button>':'');
+  el('chatTitle').innerHTML='💬 '+esc(convName)+(gid?'<button data-addmembers="'+gid+'" style="background:rgba(255,255,255,.25);border:none;color:#fff;font-size:.72rem;padding:3px 8px;border-radius:8px;cursor:pointer;margin-left:8px">+ Members</button>':'');
   el('chatMessages').innerHTML='<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:20px">Loading...</div>';
   el('chatTabs').querySelectorAll('.chat-tab').forEach(function(t){t.classList.toggle('on',t.dataset.conv===convId);});
   listenToConvo(convId);
@@ -1659,6 +1659,7 @@ document.addEventListener('click',function(e){
   // Chat
   var convBtn=t.closest('[data-conv]');if(convBtn&&convBtn.closest('#chatTabs')){switchConvo(convBtn.dataset.conv,convBtn.dataset.cname,convBtn.dataset.gid||'');return;}
   var addmem=t.closest('[data-addmem]');if(addmem&&addmem.closest('#addMembersSelect')){var an=addmem.dataset.addmem;var ai=addMembersSelected.indexOf(an);if(ai>-1)addMembersSelected.splice(ai,1);else addMembersSelected.push(an);buildAddMembersSelect();return;}
+  var addmembers=t.closest('[data-addmembers]');if(addmembers){openAddMembers(addmembers.dataset.addmembers);return;}
   var gmem=t.closest('[data-gmem]');if(gmem&&gmem.closest('#groupMemSelect')){var gn=gmem.dataset.gmem;var gi=groupSelectedMembers.indexOf(gn);if(gi>-1)groupSelectedMembers.splice(gi,1);else groupSelectedMembers.push(gn);buildGroupMemSelect();return;}
   var dsh=t.closest('[data-dsh]');if(dsh){if(userName!==ADMIN)return;db.ref('shopping/'+dsh.dataset.dsh).remove();return;}
   var addd=t.closest('[data-addd]');if(addd){dayCtx={dk:addd.dataset.addd};el('dayModTitle').textContent='Add to '+addd.dataset.addd;el('dayModInp').value='';el('dayModType').value='B';el('dayMod').classList.remove('h');setTimeout(function(){el('dayModInp').focus();},80);return;}
