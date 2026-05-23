@@ -62,6 +62,38 @@
 <input id="ebNotes" type="text" placeholder="Notes (optional)">
 <div class="mbrow"><button class="sm sx" id="editBillCancel">Cancel</button><button class="sm st" id="editBillSave">Save</button></div>
 </div></div>
+<div class="minimod h" id="calAddMod"><div class="minibox" style="max-width:380px">
+<h3>Add to Calendar</h3>
+<div class="cal-add-type-select" id="calTypeSelect">
+  <button class="cal-type-btn on" data-caltype="event">&#x1F4C5; Event</button>
+  <button class="cal-type-btn" data-caltype="birthday">&#x1F382; Birthday</button>
+  <button class="cal-type-btn" data-caltype="personal">&#x1F4CB; Personal</button>
+</div>
+<div id="calAddFields">
+  <input id="calAddName" type="text" placeholder="Name / title">
+  <input id="calAddDate" type="date">
+  <input id="calAddNotes" type="text" placeholder="Notes (optional)">
+  <div id="calBirthdayFields" style="display:none">
+    <div class="cal-birthday-section">
+      <div style="font-size:.8rem;font-weight:700;color:#e65100;margin-bottom:8px">&#x1F382; Birthday settings</div>
+      <input id="calBirthYear" type="number" placeholder="Birth year (optional — for age calc)" min="1900" max="2025" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;margin-bottom:7px;outline:none;font-family:inherit">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--charcoal);cursor:pointer">
+        <input type="checkbox" id="calBirthdayRecurring" checked style="accent-color:var(--terra)"> Recurring every year
+      </label>
+    </div>
+  </div>
+  <div id="calPersonalFields" style="display:none">
+    <select id="calPersonalType" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;margin-bottom:7px;outline:none;font-family:inherit">
+      <option value="work">Work</option>
+      <option value="uni">Uni</option>
+      <option value="appt">Appointment</option>
+      <option value="workout">Workout</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+</div>
+<div class="mbrow" style="margin-top:8px"><button class="sm sx" id="calAddCancel">Cancel</button><button class="sm st" id="calAddSave">Save</button></div>
+</div></div>
 <div class="minimod h" id="dayMod"><div class="minibox"><h3 id="dayModTitle">Add to Day</h3><select id="dayModType"><option value="B">Breakfast</option><option value="L">Lunch</option><option value="S">Snack</option><option value="work">Work</option><option value="uni">Uni</option><option value="appt">Appointment</option><option value="workout">Workout</option></select><input id="dayModInp" type="text" placeholder="Details..."><p style="font-size:.75rem;color:var(--sage);margin:-4px 0 8px;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Syncs to Planner &amp; Dashboard automatically</p><div class="mbrow"><button class="sm sx" id="dayModCancel">Cancel</button><button class="sm st" id="dayModSave">Save</button></div></div></div>
 <div class="minimod h" id="mealMod"><div class="minibox"><h3 id="mealModTitle">Suggest a Meal</h3><input id="mealModInp" type="text" placeholder="Type meal name..."><div id="mealSugList" style="max-height:100px;overflow-y:auto;margin-bottom:8px"></div><input id="mealModUrl" type="url" placeholder="Recipe URL (optional)"><div class="mbrow"><button class="sm sx" id="mealModCancel">Cancel</button><button class="sm st" id="mealModSave">Suggest</button></div></div></div>
 <div class="minimod h" id="dayDetailMod"><div class="minibox" style="max-width:380px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px"><h3 id="dayDetailTitle" style="margin-bottom:0">Day</h3><button class="sm sx" id="dayDetailClose">&#x2715;</button></div><div id="dayDetailBody"></div></div></div>
@@ -108,6 +140,7 @@
   <button id="tb-r"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" fill="currentColor" opacity=".9"/><path d="M8 7h8M8 11h8M8 15h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-lbl">Recipes</span></button>
   <button id="tb-p"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity=".9"/><path d="M3 9h18" stroke="white" stroke-width="1.5"/><rect x="7" y="2" width="2" height="5" rx="1" fill="currentColor"/><rect x="15" y="2" width="2" height="5" rx="1" fill="currentColor"/><rect x="7" y="13" width="3" height="3" rx=".5" fill="white" opacity=".8"/><rect x="11" y="13" width="3" height="3" rx=".5" fill="white" opacity=".8"/><rect x="15" y="13" width="2" height="3" rx=".5" fill="white" opacity=".8"/></svg></span><span class="nav-lbl">Planner</span></button>
   <button id="tb-e"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity=".9"/><path d="M3 9h18" stroke="white" stroke-width="1.5"/><rect x="7" y="2" width="2" height="5" rx="1" fill="currentColor"/><rect x="15" y="2" width="2" height="5" rx="1" fill="currentColor"/><circle cx="12" cy="15" r="3.5" fill="white" opacity=".9"/><path d="M11 15l1 1 2-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-lbl">Events</span></button>
+  <button id="tb-c"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity=".9"/><path d="M3 9h18" stroke="white" stroke-width="1.5"/><rect x="7" y="2" width="2" height="5" rx="1" fill="currentColor"/><rect x="15" y="2" width="2" height="5" rx="1" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="white" opacity=".9"/><circle cx="12" cy="14" r="1.5" fill="white" opacity=".9"/><circle cx="16" cy="14" r="1.5" fill="white" opacity=".9"/><circle cx="8" cy="18" r="1.5" fill="white" opacity=".7"/><circle cx="12" cy="18" r="1.5" fill="white" opacity=".7"/></svg></span><span class="nav-lbl">Calendar</span></button>
   <button id="tb-b"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="14" rx="2" fill="currentColor" opacity=".9"/><path d="M2 10h20" stroke="white" stroke-width="1.5"/><circle cx="7" cy="15" r="1.5" fill="white" opacity=".8"/><rect x="11" y="13.5" width="8" height="2.5" rx="1.25" fill="white" opacity=".55"/></svg></span><span class="nav-lbl">Bills</span></button>
   <button id="tb-t"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 3h6l1 4H8L9 3z" fill="currentColor" opacity=".7"/><rect x="5" y="7" width="14" height="14" rx="2" fill="currentColor" opacity=".9"/><path d="M9 12h6M9 15.5h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-lbl">Testing</span></button>
   <button id="tb-s"><span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 2h12l2 5H4L6 2z" fill="currentColor" opacity=".7"/><rect x="3" y="7" width="18" height="14" rx="2" fill="currentColor" opacity=".9"/><path d="M9 12h6M9 15h4M7 12v3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-lbl">Shopping</span></button>
@@ -149,6 +182,30 @@
   <div id="pg-e" class="pg">
     <div class="aform"><h3>Add Event</h3><div class="frow"><input id="evName" type="text" placeholder="Event name"><input id="evDate" type="date"><input id="evDesc" type="text" placeholder="Notes (optional)"><button class="btn" id="addEvBtn">Save Event</button></div></div>
     <div class="ptitle">Events</div><div id="evList"></div>
+  </div>
+
+  <div id="pg-c" class="pg">
+    <div class="cal-view-toggle">
+      <button class="on" id="cv-month" data-calview="month">Month</button>
+      <button id="cv-week" data-calview="week">Week</button>
+      <button id="cv-day" data-calview="day">Day</button>
+    </div>
+    <div class="cal-header">
+      <button id="calPrev">&#x2190;</button>
+      <span id="calLabel"></span>
+      <button id="calNext">&#x2192;</button>
+    </div>
+    <div class="cal-legend" id="calLegend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#B8967E"></div>Events</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#4a9a4a"></div>Meals</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#3a7bd5"></div>Schedule</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#f5a623"></div>Birthdays</div>
+      <div class="cal-legend-item" id="calBillLegend" style="display:none"><div class="cal-legend-dot" style="background:#e91e63"></div>Bills</div>
+    </div>
+    <div id="calGrid"></div>
+    <div style="margin-top:14px;text-align:center">
+      <button class="btn" id="calAddBtn" style="font-size:.84rem;padding:8px 18px">+ Add to Calendar</button>
+    </div>
   </div>
 
   <div id="pg-b" class="pg">
