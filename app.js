@@ -518,6 +518,8 @@ document.addEventListener('click',function(e){
     }
     return;}
   var unpaybill=t.closest('[data-unpaybill]');if(unpaybill){db.ref('bills/'+unpaybill.dataset.unpaybill).update({paid:false,paidDate:'',paidBy:''});return;}
+  var caledit=t.closest('[data-caledit]');if(caledit){openCalEdit(caledit.dataset.caledit);return;}
+  var caldel=t.closest('[data-caldel]');if(caldel){if(!confirm('Remove this?'))return;db.ref('calendarEvents/'+caldel.dataset.caldel).remove();setTimeout(renderCalendar,300);return;}
   var delbill=t.closest('[data-delbill]');if(delbill){if(userName!==ADMIN)return;if(!confirm('Remove this bill?'))return;db.ref('bills/'+delbill.dataset.delbill).remove();return;}
 });
 
@@ -606,10 +608,10 @@ function getCalItemsForDate(dk){
       // recurring — match month-day
       if(ev.date&&ev.date.slice(5)===dk.slice(5)){
         var age=null;if(ev.birthYear){age=parseInt(dk.slice(0,4))-ev.birthYear;}
-        items.push({type:'birthday',text:ev.name+(age!==null?' turns '+age:''),source:'Birthdays'});
+        items.push({type:'birthday',text:ev.name+(age!==null?' turns '+age:''),source:'Birthdays',id:ev.id,ev:ev});
       }
     } else {
-      if(ev.date===dk)items.push({type:ev.type||'event',text:ev.name,source:'Calendar'});
+      if(ev.date===dk)items.push({type:ev.type||'event',text:ev.name,source:'Calendar',id:ev.id,ev:ev});
     }
   });
 
@@ -767,9 +769,16 @@ function renderCalDay(){
       groups[g].forEach(function(item){
         html+='<div class="cal-day-item" style="background:'+t.bg+';border-color:'+t.border+'">';
         html+='<div class="cal-day-item-icon">'+t.icon+'</div>';
-        html+='<div><div class="cal-day-item-text">'+esc(item.text)+'</div>';
+        html+='<div style="flex:1"><div class="cal-day-item-text">'+esc(item.text)+'</div>';
         if(item.source)html+='<div class="cal-day-item-sub">'+esc(item.source)+'</div>';
-        html+='</div></div>';
+        html+='</div>';
+        if(item.id&&(item.type==='birthday'||item.type==='event')){
+          html+='<div style="display:flex;gap:4px">';
+          html+='<button class="sm sx" style="font-size:.68rem;padding:2px 7px" data-caledit="'+item.id+'">Edit</button>';
+          html+='<button class="xbtn" data-caldel="'+item.id+'">🗑</button>';
+          html+='</div>';
+        }
+        html+='</div>';
       });
       html+='</div>';
     });
@@ -815,7 +824,7 @@ el('calAddBtn').addEventListener('click',function(){
   el('calPersonalFields').style.display='none';
   el('calAddMod').classList.remove('h');
 });
-el('calAddCancel').addEventListener('click',function(){el('calAddMod').classList.add('h');});
+el('calAddCancel').addEventListener('click',function(){el('calAddMod').classList.add('h');editCalId='';if(el('calAddSave'))el('calAddSave').dataset.editing='';});
 
 // Type selector in add modal
 el('calTypeSelect').addEventListener('click',function(e){
@@ -833,7 +842,13 @@ el('calAddSave').addEventListener('click',function(){
   var typeBtn=el('calTypeSelect').querySelector('.cal-type-btn.on');
   var type=typeBtn?typeBtn.dataset.caltype:'event';
   var notes=el('calAddNotes').value.trim();
-
+  // If editing existing
+  if(el('calAddSave').dataset.editing==='1'&&editCalId){
+    var updates={name:name,date:date,notes:notes};
+    if(type==='birthday'){updates.birthYear=el('calBirthYear').value?parseInt(el('calBirthYear').value):null;updates.recurring=el('calBirthdayRecurring').checked;}
+    db.ref('calendarEvents/'+editCalId).update(updates);
+    el('calAddMod').classList.add('h');editCalId='';el('calAddSave').dataset.editing='';setTimeout(renderCalendar,400);return;
+  }
   if(type==='personal'){
     // Save to personal schedule
     var ptype=el('calPersonalType').value;
@@ -853,6 +868,31 @@ el('calAddSave').addEventListener('click',function(){
   el('calAddMod').classList.add('h');
   setTimeout(renderCalendar,400);
 });
+
+
+// Calendar event edit/delete
+var editCalId='';
+function openCalEdit(id){
+  var ev=calEvents.find(function(x){return x.id===id;});if(!ev)return;
+  editCalId=id;
+  // Reuse calAddMod
+  el('calAddName').value=ev.name||'';
+  el('calAddDate').value=ev.date||'';
+  el('calAddNotes').value=ev.notes||'';
+  // Set type
+  el('calTypeSelect').querySelectorAll('.cal-type-btn').forEach(function(b){
+    b.classList.toggle('on',b.dataset.caltype===(ev.type==='birthday'?'birthday':ev.type==='personal'?'personal':'event'));
+  });
+  el('calBirthdayFields').style.display=ev.type==='birthday'?'block':'none';
+  el('calPersonalFields').style.display=ev.type==='personal'?'block':'none';
+  if(ev.type==='birthday'){
+    el('calBirthYear').value=ev.birthYear||'';
+    el('calBirthdayRecurring').checked=ev.recurring!==false;
+  }
+  // Change save button to update
+  el('calAddSave').dataset.editing='1';
+  el('calAddMod').classList.remove('h');
+}
 
 // Listen to calendarEvents
 db.ref('calendarEvents').on('value',function(snap){
