@@ -25,7 +25,7 @@ function init() {
       el('userPill').innerHTML = avt(sn, sc, 20) + '<span>' + esc(sn) + '</span>';
       loadPersonal(); buildPresetTags(); buildChatTabs(); listenToConvo('family');
       db.ref('members/'+sn+'/lastSeen').set(Date.now());
-      setTimeout(renderDashboard, 1200);
+     setTimeout(renderDashboard,400);
     }
     loadMembers();
   });
