@@ -1,72 +1,17 @@
 // ─── BILLS.JS ────────────────────────────────────────────────────────────
-// ── BILLS ──
-el('addBillBtn').addEventListener('click',function(){
-  var n=el('billName').value.trim();if(!n){alert('Enter a bill name.');return;}
-  var due=el('billDue').value;if(!due){alert('Select a due date.');return;}
-  var bill={id:'bi'+Date.now(),name:n,amount:parseFloat(el('billAmt').value)||0,freq:el('billFreq').value,due:due,cat:el('billCat').value.replace(/.*value="?([^"]*)"?.*/,'$1')||'other',notes:el('billNotes').value.trim(),paid:false,paidDate:'',paidBy:'',addedBy:userName};
-  // fix cat extraction
-  bill.cat=el('billCat').value;
-  db.ref('bills/'+bill.id).set(bill);
-  ['billName','billAmt','billDue','billNotes'].forEach(function(i){el(i).value='';});
-});
-
-// bill filter bar
-el('billFilterBar').addEventListener('click',function(e){
-  var btn=e.target.closest('[data-bf]');if(!btn)return;
-  billFilter=btn.dataset.bf;
-  el('billFilterBar').querySelectorAll('button').forEach(function(b){b.className=b.dataset.bf===billFilter?'st':'sx';});
-  renderBills();
-});
-
-function renderBills(){
-  var today=todayKey();
-  // upcoming banner
-  var upcoming=bills.filter(function(b){if(b.paid)return false;var d=daysUntil(b.due);return d>=0&&d<=14;}).sort(function(a,b){return a.due<b.due?-1:1;});
-  var bannerEl=el('billUpcomingBanner');
-  if(bannerEl){
-    bannerEl.innerHTML=upcoming.length?'<div style="margin-bottom:13px"><div class="ptitle" style="margin-bottom:7px;font-size:.9rem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="14" rx="2" fill="#e65100" opacity=".8"/><path d="M2 10h20" stroke="white" stroke-width="1.4"/></svg>Due in 14 days</div>'+upcoming.map(function(b){var bc=BILL_CATS[b.cat]||BILL_CATS.other,d=daysUntil(b.due);return'<div class="bill-row'+(d<0?' overdue':'')+'" style="border-left:4px solid '+bc.col+'"><div class="bill-icon" style="background:'+bc.bg+';color:'+bc.col+'">'+bc.icon+'</div><div class="bill-info"><div class="bill-name">'+esc(b.name)+'</div><div class="bill-meta">'+fmtDate(b.due)+(b.freq&&b.freq!=='once'?' · '+b.freq:'')+(b.notes?' · '+esc(b.notes):'')+'</div></div>'+(b.amount?'<div class="bill-amt">$'+b.amount.toFixed(2)+'</div>':'')+'<div class="bill-actions"><span class="bill-status '+(d===0?'bs-due':d<0?'bs-overdue':'bs-upcoming')+'">'+(d<0?'Overdue '+Math.abs(d)+'d':d===0?'Today':'In '+d+'d')+'</span><button class="sm st" style="font-size:.7rem;padding:3px 9px" data-paybill="'+b.id+'">Mark Paid</button></div></div>';}).join('')+'</div>':'';
-  }
-  // filter
-  var filtered=bills.slice();
-  if(billFilter==='paid')filtered=filtered.filter(function(b){return b.paid;});
-  else if(billFilter==='due')filtered=filtered.filter(function(b){if(b.paid)return false;var d=daysUntil(b.due);return d>=0&&d<=14;});
-  filtered.sort(function(a,b){if(a.paid&&!b.paid)return 1;if(!a.paid&&b.paid)return-1;return a.due<b.due?-1:1;});
-  var listEl=el('billList');if(!listEl)return;
-  if(!bills.length){listEl.innerHTML='<div class="emp"><span>💳</span>No bills yet — add one above!</div>';return;}
-  if(!filtered.length){listEl.innerHTML='<div class="emp" style="padding:18px">No bills match this filter</div>';return;}
-  var isAdmin=userName===ADMIN;
-  listEl.innerHTML=filtered.map(function(b){
-    var bc=BILL_CATS[b.cat]||BILL_CATS.other,d=daysUntil(b.due);
-    var statusHtml=b.paid?'<span class="bill-status bs-paid">✓ Paid'+(b.paidDate?' '+fmtDate(b.paidDate):'')+(b.paidBy?' by '+esc(b.paidBy):'')+'</span>':d<0?'<span class="bill-status bs-overdue">Overdue '+Math.abs(d)+'d</span>':d===0?'<span class="bill-status bs-due">Due today</span>':'<span class="bill-status bs-upcoming">Due '+fmtDate(b.due)+'</span>';
-    return'<div class="bill-row'+(b.paid?' paid-row':'')+(d<0&&!b.paid?' overdue':'')+'" style="border-left:4px solid '+bc.col+'">'+
-      '<div class="bill-icon" style="background:'+bc.bg+';color:'+bc.col+'">'+bc.icon+'</div>'+
-      '<div class="bill-info"><div class="bill-name">'+esc(b.name)+'</div><div class="bill-meta">'+(b.freq&&b.freq!=='once'?b.freq.charAt(0).toUpperCase()+b.freq.slice(1)+' · ':'')+(b.notes?esc(b.notes):'&nbsp;')+'</div></div>'+
-      (b.amount?'<div class="bill-amt">$'+b.amount.toFixed(2)+'</div>':'')+
-      '<div class="bill-actions">'+statusHtml+
-        (!b.paid?'<button class="sm st" style="font-size:.7rem;padding:3px 9px" data-paybill="'+b.id+'">Mark Paid</button>':'<button class="sm sx" style="font-size:.7rem;padding:3px 9px" data-unpaybill="'+b.id+'">Undo</button>')+
-        (userName?'<button class="sm sx" style="font-size:.7rem;padding:3px 9px" data-editbill="'+b.id+'">Edit</button>':'')+(isAdmin?'<button class="xbtn" data-delbill="'+b.id+'">🗑</button>':'')+
-      '</div></div>';
-  }).join('');
-}
+function renderBills(){var pg=el('pg-b');if(!pg)return;var filtered=bills.filter(function(b){if(billFilter==='paid')return b.paid;if(billFilter==='due')return!b.paid&&daysUntil(b.due)<=14;return true;});var upcoming=bills.filter(function(b){return!b.paid&&daysUntil(b.due)<=14;});var html='';if(upcoming.length){html+='<div class="bill-banner">⚠️ '+upcoming.length+' bill'+(upcoming.length>1?'s':'')+' due soon</div>';}html+='<div class="section-card"><h3>Bills</h3><div id="billFilterBar" style="display:flex;gap:6px;margin-bottom:12px"><button data-bf="all" class="'+(billFilter==='all'?'st':'sx')+'">All</button><button data-bf="due" class="'+(billFilter==='due'?'st':'sx')+'">Due Soon</button><button data-bf="paid" class="'+(billFilter==='paid'?'st':'sx')+'">Paid</button></div>';if(!filtered.length){html+='<p style="color:var(--muted);font-size:.84rem;text-align:center;padding:12px">No bills here</p>';}else{filtered.forEach(function(b){var cat=BILL_CATS[b.cat]||BILL_CATS.other;var du=daysUntil(b.due);var overdue=!b.paid&&du<0;var soon=!b.paid&&du>=0&&du<=7;html+='<div class="bill-item'+(b.paid?' paid':overdue?' overdue':soon?' soon':'')+'" id="bi-'+b.id+'">';html+='<div class="bill-cat-icon" style="background:'+cat.bg+';color:'+cat.col+'">'+cat.icon+'</div>';html+='<div class="bill-info"><div class="bill-name">'+esc(b.name)+(b.freq&&b.freq!=='once'?' <span style="font-size:.65rem;color:var(--muted)">'+b.freq+'</span>':'')+'</div>';html+='<div class="bill-meta">'+(b.amount?'$'+parseFloat(b.amount).toFixed(2)+' · ':'')+fmtDate(b.due)+(b.paid?' · Paid by '+esc(b.paidBy||''):'')+'</div></div>';html+='<div style="display:flex;gap:4px;align-items:center">';if(!b.paid){html+='<button class="sm st" style="font-size:.7rem;padding:3px 9px" data-paybill="'+b.id+'">✓ Paid</button>';}else{html+='<button class="sm sx" style="font-size:.7rem;padding:3px 9px" data-unpaybill="'+b.id+'">Undo</button>';}html+=(userName?'<button class="sm sx" style="font-size:.7rem;padding:3px 9px" data-editbill="'+b.id+'">Edit</button>':'');html+=(userName===ADMIN?'<button class="xbtn" data-delbill="'+b.id+'">🗑</button>':'');html+='</div></div>';});}html+='<div class="section-card" style="margin-top:14px"><h3>Add Bill</h3><input id="billName" type="text" placeholder="Bill name"><div style="display:flex;gap:7px"><input id="billAmt" type="number" placeholder="Amount $" min="0" step="0.01" style="flex:1"><select id="billFreq" style="flex:1"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="fortnightly">Fortnightly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option><option value="once">One-off</option></select></div><input id="billDue" type="date"><select id="billCat"><option value="utilities">⚡ Utilities</option><option value="insurance">🛡 Insurance</option><option value="subscriptions">📺 Subscriptions</option><option value="rent">🏠 Rent / Mortgage</option><option value="phone">📱 Phone / Internet</option><option value="medical">♥ Medical</option><option value="transport">🚗 Transport</option><option value="other">📋 Other</option></select><input id="billNotes" type="text" placeholder="Notes (optional)"><button class="btn" id="addBillBtn">Save Bill</button></div></div>';pg.innerHTML=html;}
+function openEditBill(bid){var b=bills.find(function(x){return x.id===bid;});if(!b)return;editBillId=bid;el('ebName').value=b.name||'';el('ebAmt').value=b.amount||'';el('ebFreq').value=b.freq||'monthly';el('ebDue').value=b.due||'';el('ebCat').value=b.cat||'other';el('ebNotes').value=b.notes||'';el('editBillMod').classList.remove('h');}
 
 document.addEventListener('DOMContentLoaded',function(){
-  el('addBillBtn').addEventListener('click',function(){
-    var n=el('billName').value.trim();if(!n){alert('Enter a bill name.');return;}
-    var due=el('billDue').value;if(!due){alert('Select a due date.');return;}
-    var bill={id:'bi'+Date.now(),name:n,amount:parseFloat(el('billAmt').value)||0,freq:el('billFreq').value,due:due,cat:el('billCat').value,notes:el('billNotes').value.trim(),paid:false,paidDate:'',paidBy:'',addedBy:userName};
-    db.ref('bills/'+bill.id).set(bill);
-    ['billName','billAmt','billDue','billNotes'].forEach(function(i){el(i).value='';});
-  });
-  el('billFilterBar').addEventListener('click',function(e){
-    var btn=e.target.closest('[data-bf]');if(!btn)return;
-    billFilter=btn.dataset.bf;
-    el('billFilterBar').querySelectorAll('button').forEach(function(b){b.className=b.dataset.bf===billFilter?'st':'sx';});
-    renderBills();
+  document.addEventListener('click',function(e){
+    var addBill=e.target.closest('#addBillBtn');
+    if(addBill){var n=el('billName').value.trim();if(!n){alert('Enter a bill name.');return;}var due=el('billDue').value;if(!due){alert('Select a due date.');return;}var bill={id:'bi'+Date.now(),name:n,amount:parseFloat(el('billAmt').value)||0,freq:el('billFreq').value,due:due,cat:el('billCat').value,notes:el('billNotes').value.trim(),paid:false,paidDate:'',paidBy:'',addedBy:userName};db.ref('bills/'+bill.id).set(bill);['billName','billAmt','billDue','billNotes'].forEach(function(i){el(i).value='';});return;}
+    var bfBtn=e.target.closest('[data-bf]');if(bfBtn){billFilter=bfBtn.dataset.bf;renderBills();return;}
+    var editbill=e.target.closest('[data-editbill]');if(editbill){openEditBill(editbill.dataset.editbill);return;}
+    var delbill=e.target.closest('[data-delbill]');if(delbill){if(!confirm('Delete this bill?'))return;db.ref('bills/'+delbill.dataset.delbill).remove();return;}
+    var paybill=e.target.closest('[data-paybill]');if(paybill){if(!userName)return;var bid=paybill.dataset.paybill,b=bills.find(function(x){return x.id===bid;});if(!b)return;var nextDue='';if(b.freq&&b.freq!=='once'){var d=new Date(b.due+'T00:00:00');if(b.freq==='weekly')d.setDate(d.getDate()+7);else if(b.freq==='fortnightly')d.setDate(d.getDate()+14);else if(b.freq==='monthly')d.setMonth(d.getMonth()+1);else if(b.freq==='quarterly')d.setMonth(d.getMonth()+3);else if(b.freq==='annual')d.setFullYear(d.getFullYear()+1);nextDue=d.toISOString().split('T')[0];}db.ref('bills/'+bid).update({paid:true,paidDate:todayKey(),paidBy:userName});if(nextDue){var newId='bi'+Date.now();db.ref('bills/'+newId).set(Object.assign({},b,{id:newId,paid:false,paidDate:'',paidBy:'',due:nextDue}));}return;}
+    var unpaybill=e.target.closest('[data-unpaybill]');if(unpaybill){db.ref('bills/'+unpaybill.dataset.unpaybill).update({paid:false,paidDate:'',paidBy:''});return;}
   });
   el('editBillCancel').addEventListener('click',function(){el('editBillMod').classList.add('h');editBillId='';});
-  el('editBillSave').addEventListener('click',function(){
-    if(!editBillId)return;
-    db.ref('bills/'+editBillId).update({name:el('ebName').value.trim(),amount:parseFloat(el('ebAmt').value)||0,freq:el('ebFreq').value,due:el('ebDue').value,cat:el('ebCat').value,notes:el('ebNotes').value.trim()});
-    el('editBillMod').classList.add('h');editBillId='';
-  });
+  el('editBillSave').addEventListener('click',function(){if(!editBillId)return;db.ref('bills/'+editBillId).update({name:el('ebName').value.trim(),amount:parseFloat(el('ebAmt').value)||0,freq:el('ebFreq').value,due:el('ebDue').value,cat:el('ebCat').value,notes:el('ebNotes').value.trim()});el('editBillMod').classList.add('h');editBillId='';});
 });
