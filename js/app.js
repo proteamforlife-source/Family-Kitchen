@@ -25,7 +25,7 @@ function init() {
       el('userPill').innerHTML = avt(sn, sc, 20) + '<span>' + esc(sn) + '</span>';
       loadPersonal(); buildPresetTags(); buildChatTabs(); listenToConvo('family');
       db.ref('members/'+sn+'/lastSeen').set(Date.now());
-      setTimeout(renderDashboard,1200);
+      setTimeout(renderDashboard, 1200);
     }
     loadMembers();
   });
@@ -56,9 +56,20 @@ function init() {
   });
 }
 
+function openEditBill(bid) {
+  var b = bills.find(function(x) { return x.id === bid; }); if (!b) return;
+  editBillId = bid;
+  el('ebName').value = b.name || '';
+  el('ebAmt').value = b.amount || '';
+  el('ebFreq').value = b.freq || 'monthly';
+  el('ebDue').value = b.due || '';
+  el('ebCat').value = b.cat || 'other';
+  el('ebNotes').value = b.notes || '';
+  el('editBillMod').classList.remove('h');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 
-  // Tab listeners
   tabs.forEach(function(id) {
     el('tb-'+id).addEventListener('click', function() {
       switchTab(id);
@@ -67,12 +78,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Image modal close
   el('imgModal').querySelector('button').addEventListener('click', function() {
     el('imgModal').classList.remove('on');
   });
 
-  // Edit bill modal
   var editBillCancel = el('editBillCancel');
   if (editBillCancel) editBillCancel.addEventListener('click', function() {
     el('editBillMod').classList.add('h'); editBillId = '';
@@ -97,33 +106,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── GLOBAL EVENT DELEGATION ──
 document.addEventListener('change', function(e) {
   var t = e.target;
-  if (t.dataset.dci) {
-    if (!userName) { t.checked = !t.checked; return; }
-    var eid = t.dataset.dev, did = t.dataset.dci, ev = events.find(function(x) { return x.id === eid; });
-    if (!ev) return;
-    var dishes = ev.dishes ? Object.values(ev.dishes) : [], dish = dishes.find(function(d) { return d.id === did; });
-    if (!dish) return;
-    if (dish.by && dish.by !== userName) { alert(dish.by + ' is already bringing this!'); t.checked = false; return; }
-    dish.by = dish.by === userName ? '' : userName;
-    db.ref('events/'+eid+'/dishes/'+did+'/by').set(dish.by); return;
-  }
-  if (t.dataset.shid) {
-    if (!userName) return;
-    var item = shopItems.find(function(s) { return s.id === t.dataset.shid; });
-    if (!item) return; item.done = !item.done; item.by = item.done ? userName : '';
-    db.ref('shopping/'+t.dataset.shid).update({ done: item.done, by: item.by }); return;
-  }
-  if (t.dataset.todoid) {
-    if (!userName) return;
-    db.ref('personal/'+userName+'/todos/'+t.dataset.todoid+'/done').set(t.checked);
-    setTimeout(renderMyPage, 300); return;
-  }
-  if (t.dataset.photor) {
-    var file = t.files[0]; if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev2) { db.ref('recipes/'+t.dataset.photor+'/photo').set(ev2.target.result); };
-    reader.readAsDataURL(file); return;
-  }
+  if (t.dataset.dci) { if (!userName) { t.checked = !t.checked; return; } var eid = t.dataset.dev, did = t.dataset.dci, ev = events.find(function(x) { return x.id === eid; }); if (!ev) return; var dishes = ev.dishes ? Object.values(ev.dishes) : [], dish = dishes.find(function(d) { return d.id === did; }); if (!dish) return; if (dish.by && dish.by !== userName) { alert(dish.by + ' is already bringing this!'); t.checked = false; return; } dish.by = dish.by === userName ? '' : userName; db.ref('events/'+eid+'/dishes/'+did+'/by').set(dish.by); return; }
+  if (t.dataset.shid) { if (!userName) return; var item = shopItems.find(function(s) { return s.id === t.dataset.shid; }); if (!item) return; item.done = !item.done; item.by = item.done ? userName : ''; db.ref('shopping/'+t.dataset.shid).update({ done: item.done, by: item.by }); return; }
+  if (t.dataset.todoid) { if (!userName) return; db.ref('personal/'+userName+'/todos/'+t.dataset.todoid+'/done').set(t.checked); setTimeout(renderMyPage, 300); return; }
+  if (t.dataset.photor) { var file = t.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(ev2) { db.ref('recipes/'+t.dataset.photor+'/photo').set(ev2.target.result); }; reader.readAsDataURL(file); return; }
 });
 
 document.addEventListener('click', function(e) {
@@ -133,7 +119,7 @@ document.addEventListener('click', function(e) {
   var st2 = t.closest('[data-switchtab]'); if (st2 && !t.closest('[data-addmeal]') && !t.closest('[data-quickdinner]')) { switchTab(st2.dataset.switchtab); return; }
   var sc2 = t.closest('[data-switchchat]'); if (sc2) { openChat(); return; }
   var qd = t.closest('[data-quickdinner]'); if (qd) { var todayIdx2 = new Date().getDay()-1; if (todayIdx2 < 0) todayIdx2 = 6; mealCtx = { wk: dKey(getWeekDates(0)[0]), di: String(todayIdx2), slot: 'D' }; el('mealModTitle').textContent = 'Suggest for Tonight'; el('mealModInp').value = ''; el('mealModUrl').value = ''; el('mealMod').classList.remove('h'); return; }
-  var uf = t.closest('[data-usefmt]'); if (uf) { try { var parsed = JSON.parse(uf.dataset.usefmt.replace(/&#39;/g,"'")); el('rName').value = parsed.name||''; el('rCat').value = parsed.category||''; el('rServings').value = parsed.servings||''; el('rIngs').value = (parsed.ingredients||[]).join(', '); el('rSteps').value = (parsed.steps||[]).join('\n'); el('fmtResult').innerHTML = ''; el('fmtResult').classList.remove('on'); el('fmtInput').value = ''; switchTab('r'); window.scrollTo(0,0); alert('Recipe loaded!'); } catch(err) {} return; }
+  var uf = t.closest('[data-usefmt]'); if (uf) { try { var parsed = JSON.parse(uf.dataset.usefmt.replace(/&#39;/g, "'")); el('rName').value = parsed.name||''; el('rCat').value = parsed.category||''; el('rServings').value = parsed.servings||''; el('rIngs').value = (parsed.ingredients||[]).join(', '); el('rSteps').value = (parsed.steps||[]).join('\n'); el('fmtResult').innerHTML = ''; el('fmtResult').classList.remove('on'); el('fmtInput').value = ''; switchTab('r'); window.scrollTo(0,0); alert('Recipe loaded!'); } catch(err) {} return; }
   var preset = t.closest('[data-preset]'); if (preset && preset.closest('#presetTags')) { var pt = preset.dataset.preset, pi2 = selectedPresetTags.indexOf(pt); if (pi2 > -1) selectedPresetTags.splice(pi2,1); else selectedPresetTags.push(pt); buildPresetTags(); return; }
   var catBtn = t.closest('[data-cat]'); if (catBtn && catBtn.closest('#catFilter')) { activeCat = catBtn.dataset.cat; buildCatFilter(); renderRecipes(); return; }
   var tagBtn = t.closest('[data-tag]'); if (tagBtn && tagBtn.closest('#tagFilter')) { activeTag = tagBtn.dataset.tag; buildTagFilter(); renderRecipes(); return; }
@@ -193,17 +179,5 @@ document.addEventListener('click', function(e) {
   var caldel = t.closest('[data-caldel]'); if (caldel) { if (!confirm('Remove this?')) return; db.ref('calendarEvents/'+caldel.dataset.caldel).remove(); setTimeout(renderCalendar,300); return; }
   var delbill = t.closest('[data-delbill]'); if (delbill) { if (userName !== ADMIN) return; if (!confirm('Remove this bill?')) return; db.ref('bills/'+delbill.dataset.delbill).remove(); return; }
 });
-
-function openEditBill(bid) {
-  var b = bills.find(function(x){return x.id===bid;}); if (!b) return;
-  editBillId = bid;
-  el('ebName').value = b.name||'';
-  el('ebAmt').value = b.amount||'';
-  el('ebFreq').value = b.freq||'monthly';
-  el('ebDue').value = b.due||'';
-  el('ebCat').value = b.cat||'other';
-  el('ebNotes').value = b.notes||'';
-  el('editBillMod').classList.remove('h');
-}
 
 init();
