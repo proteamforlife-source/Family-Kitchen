@@ -208,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
       ratings: {},
       photo: '',
       testing: true,
-tags: el('tTags').value.split(',').map(function(t){ return t.trim(); }).filter(Boolean),
-
+tags: el('tTags').value.split(',').map(function(t){ return t.trim(); }).filter(Boolean)
+};
     db.ref('recipes/' + rec.id).set(rec);
 
 ['tName','tIngs','tSteps','tTags'].forEach(function(i){el(i).value='';});
