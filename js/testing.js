@@ -114,6 +114,7 @@ function renderTestRecipes(){
               return '<option' + (r.cat === c ? ' selected' : '') + '>' + c + '</option>';
             }).join('') +
           '</select>' +
+      '<input type="text" id="tet-' + r.id + '" value="' + esc((r.tags||[]).join(', ')) + '" placeholder="Tags (comma separated)">' +
 
           '<input type="text" id="tei-' + r.id + '" value="' + esc((r.ings || []).join(', ')) + '" placeholder="Ingredients">' +
 
