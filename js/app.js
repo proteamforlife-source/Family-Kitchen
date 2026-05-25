@@ -5,8 +5,7 @@ var tabs=['d','r','p','e','c','b','t','s','m'];
 var pinBuffer='';
 var pinCallback=null;
 var cachedPin=null;
-db.ref('settings/recipePin').on('value',function(snap){cachedPin=snap.val()||null;});
-
+db.ref('settings/recipePin').on('value',function(snap){cachedPin=snap.val()?String(snap.val()):null;});
 // ── RECIPE PROTECTION HELPERS ──
 function attemptProtectedAction(recipeId,action){
   var rec=recipes.find(function(r){return r.id===recipeId;})||testRecipes.find(function(r){return r.id===recipeId;});
