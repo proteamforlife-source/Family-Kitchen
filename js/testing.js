@@ -24,7 +24,7 @@ function renderTestRecipes(){
         '<button class="obn" data-togtr="'+r.id+'">View</button>'+
         '<button class="obn obt" data-cookr="'+r.id+'">Cook</button>'+
         (userName?'<label class="obn obs" style="cursor:pointer">Photo<input type="file" accept="image/*" data-photor="'+r.id+'" style="display:none"></label>':'')+
-        (userName?'<button class="obn" style="background:#fff8e1;color:#b8680a;border-color:#f5a623" data-suggesttonight="'+r.id+'" data-mname="'+esc(r.name)+'">🍽 Tonight</button>':'')+
+        (userName?'<button class="obn" style="background:#fff8e1;color:#b8680a;border-color:#f5a623" data-suggesttonight="'+r.id+'" data-mname="'+esc(r.name)+'">🍽 Tonight</button>':'')+(userName?'<button class="obn" style="background:#eaf3ea;color:#2a6a2a;border-color:#a0d0a0" data-addtoplanner="'+r.id+'" data-mname="'+esc(r.name)+'">📅 Add to Planner</button>':'')+
       '</div>'+
       '<div class="eform" id="tef-'+r.id+'">'+
         '<input type="text" id="ten-'+r.id+'" value="'+esc(r.name)+'">'+
