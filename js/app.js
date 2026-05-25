@@ -233,3 +233,23 @@ document.addEventListener('change', function(e) {
 });
 
 init();
+// ── PIN MODAL FUNCTIONS ──
+function openPinModal(onSuccess){
+  pinBuffer='';pinCallback=onSuccess;updatePinDots();el('pinErr').textContent='';
+  var hasPin=!!cachedPin;
+  el('pinPad').style.display=hasPin?'grid':'none';
+  el('pinSetupWrap').style.display=hasPin?'none':'block';
+  el('pinModTitle').textContent=hasPin?'🔒 Recipe Locked':'🔒 Set a PIN';
+  el('pinModDesc').textContent=hasPin?'Enter your household PIN to continue':'Create a 4-digit PIN to protect recipes';
+  el('pinMod').classList.remove('h');
+}
+function updatePinDots(){
+  for(var i=0;i<4;i++){var d=el('pd'+i);if(d)d.className='pin-dot2'+(i<pinBuffer.length?' filled':'');}
+}
+function closePinModal(){
+  el('pinMod').classList.add('h');pinBuffer='';pinCallback=null;el('pinErr').textContent='';
+}
+function pinShake(){
+  var box=el('pinModBox');box.classList.remove('pin-shake');void box.offsetWidth;box.classList.add('pin-shake');
+  setTimeout(function(){box.classList.remove('pin-shake');},400);
+}
