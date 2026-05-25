@@ -15,26 +15,28 @@ var CAL_TYPES = {
 
 function getCalItemsForDate(dk) {
   var items = [];
-  events.forEach(function (ev) {
-    if (ev.date === dk) items.push({ type: 'event', text: ev.name, color: ev.color, source: 'Events' });
+  events.forEach(function(ev) {
+    if (ev.date === dk) items.push({ type: 'event', text: ev.name, source: 'Events' });
   });
   if (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) {
-    Object.values(personalData.days[dk].items).forEach(function (item) {
+    Object.values(personalData.days[dk].items).forEach(function(item) {
       items.push({ type: item.type || 'personal', text: item.text, source: 'My Schedule' });
     });
   }
-  Object.values(members).forEach(function (m) {
+  Object.values(members).forEach(function(m) {
     if (!m.birthday) return;
     var bd = new Date(m.birthday + 'T00:00:00');
     if (m.birthday.slice(5) === dk.slice(5)) {
-      var age = null; if (bd.getFullYear() > 1900) { age = parseInt(dk.slice(0, 4)) - bd.getFullYear(); }
+      var age = null;
+      if (bd.getFullYear() > 1900) age = parseInt(dk.slice(0, 4)) - bd.getFullYear();
       items.push({ type: 'birthday', text: m.name + (age !== null ? ' turns ' + age : '\'s birthday'), source: 'Birthdays' });
     }
   });
-  calEvents.forEach(function (ev) {
+  calEvents.forEach(function(ev) {
     if (ev.type === 'birthday') {
       if (ev.date && ev.date.slice(5) === dk.slice(5)) {
-        var age = null; if (ev.birthYear) { age = parseInt(dk.slice(0, 4)) - ev.birthYear; }
+        var age = null;
+        if (ev.birthYear) age = parseInt(dk.slice(0, 4)) - ev.birthYear;
         items.push({ type: 'birthday', text: ev.name + (age !== null ? ' turns ' + age : ''), source: 'Birthdays', id: ev.id, ev: ev });
       }
     } else {
@@ -42,7 +44,7 @@ function getCalItemsForDate(dk) {
     }
   });
   if (userName === ADMIN) {
-    bills.forEach(function (b) {
+    bills.forEach(function(b) {
       if (!b.paid && b.due === dk) items.push({ type: 'bill', text: b.name + (b.amount ? ' $' + b.amount.toFixed(2) : ''), source: 'Bills' });
     });
   }
@@ -53,10 +55,11 @@ var plannerCalCache = {};
 function loadPlannerForCalendar(wkKeys, callback) {
   var pending = wkKeys.length;
   if (!pending) { callback(); return; }
-  wkKeys.forEach(function (wk) {
-    db.ref('planner/' + wk).once('value', function (snap) {
+  wkKeys.forEach(function(wk) {
+    db.ref('planner/' + wk).once('value', function(snap) {
       plannerCalCache[wk] = snap.val() || {};
-      pending--; if (pending === 0) callback();
+      pending--;
+      if (pending === 0) callback();
     });
   });
 }
@@ -69,56 +72,12 @@ function getMealsForDate(dk) {
   var wk = dKey(monday);
   var dayData = plannerCalCache[wk] && plannerCalCache[wk][dow];
   if (!dayData) return meals;
-  ['B', 'L', 'D'].forEach(function (slot) {
-    if (dayData[slot]) Object.values(dayData[slot]).forEach(function (m) {
+  ['B', 'L', 'D'].forEach(function(slot) {
+    if (dayData[slot]) Object.values(dayData[slot]).forEach(function(m) {
       meals.push({ type: 'meal', text: m.name, source: 'Planner' });
     });
   });
   return meals;
-}
-
-function renderCalendar() {
-  if (!el('pg-c')) return;
-  var billLeg = el('calBillLegend');
-  if (billLeg) billLeg.style.display = userName === ADMIN ? 'flex' : 'none';
-
-  // Update view toggle buttons
-  ['month', 'week', 'day'].forEach(function (v) {
-    var btn = el('cv-' + v); if (!btn) return;
-    btn.className = 'cal-type-btn' + (calView === v ? ' on' : '');
-  });
-
-  // Render compact nav: ← May 2026 ▾ Today
-  var navEl = el('calNavRow');
-  if (navEl) {
-    var labelTxt = '';
-    if (calView === 'month') {
-      var md = getMonthDatesForCal(calOffset);
-      labelTxt = md.label;
-    } else if (calView === 'week') {
-      var dates = getWeekDates(calOffset);
-      labelTxt = dates[0].toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' – ' + dates[6].toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-    } else {
-      var dd = new Date(); dd.setDate(dd.getDate() + calOffset);
-      labelTxt = dd.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'long' });
-    }
-    navEl.innerHTML =
-      '<button id="calPrevNav" style="background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px 8px;color:var(--charcoal)">&#x2190;</button>' +
-      '<span id="calLabelInner" style="cursor:pointer;font-weight:700;font-size:.92rem;color:var(--charcoal);border-bottom:' + (calView === 'month' ? '1.5px dashed var(--terra)' : 'none') + ';padding-bottom:1px">' + labelTxt + (calView === 'month' ? ' ▾' : '') + '</span>' +
-      '<button id="calNextNav" style="background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px 8px;color:var(--charcoal)">&#x2192;</button>' +
-      '<button id="calTodayBtn" style="background:var(--cream);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;color:var(--sage);cursor:pointer;margin-left:6px">Today</button>';
-
-    el('calPrevNav').addEventListener('click', function () { calOffset--; renderCalendar(); });
-    el('calNextNav').addEventListener('click', function () { calOffset++; renderCalendar(); });
-    el('calTodayBtn').addEventListener('click', function () { calOffset = 0; renderCalendar(); });
-    if (calView === 'month') {
-      el('calLabelInner').addEventListener('click', openMonthJump);
-    }
-  }
-
-  if (calView === 'month') renderCalMonth();
-  else if (calView === 'week') renderCalWeek();
-  else renderCalDay();
 }
 
 function getMonthDatesForCal(offset) {
@@ -130,17 +89,16 @@ function getMonthDatesForCal(offset) {
 }
 
 function openMonthJump() {
-  var existing = el('calMonthJumpModal');
-  if (existing) { existing.remove(); return; }
+  if (el('calMonthJumpModal')) { el('calMonthJumpModal').remove(); return; }
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var now = new Date();
   var html = '<div id="calMonthJumpModal" style="position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(42,34,24,.45)">';
   html += '<div style="background:#fff;border-radius:18px;padding:20px;width:320px;max-width:92vw;box-shadow:0 8px 32px rgba(42,34,24,.18)">';
   html += '<div style="font-weight:700;font-size:.95rem;color:var(--charcoal);margin-bottom:14px;text-align:center">Jump to Month</div>';
   for (var y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
-    html += '<div style="margin-bottom:10px"><div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.05em">' + y + '</div>';
+    html += '<div style="margin-bottom:10px"><div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">' + y + '</div>';
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">';
-    months.forEach(function (m, mi) {
+    months.forEach(function(m, mi) {
       var val = (y - now.getFullYear()) * 12 + (mi - now.getMonth());
       var isNow = y === now.getFullYear() && mi === now.getMonth();
       var isSel = val === calOffset;
@@ -148,15 +106,43 @@ function openMonthJump() {
     });
     html += '</div></div>';
   }
-  html += '<button style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--cream);color:var(--muted);font-size:.84rem;cursor:pointer" id="calJumpClose">Close</button>';
+  html += '<button id="calJumpClose" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--cream);color:var(--muted);font-size:.84rem;cursor:pointer">Close</button>';
   html += '</div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
-  el('calJumpClose').addEventListener('click', function () { el('calMonthJumpModal').remove(); });
-  el('calMonthJumpModal').addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-jumpval]');
-    if (btn) { calOffset = parseInt(btn.dataset.jumpval); el('calMonthJumpModal').remove(); renderCalendar(); return; }
-    if (e.target === el('calMonthJumpModal')) el('calMonthJumpModal').remove();
+}
+
+function updateCalNav() {
+  var navEl = el('calNavRow'); if (!navEl) return;
+  var labelTxt = '';
+  if (calView === 'month') {
+    labelTxt = getMonthDatesForCal(calOffset).label;
+  } else if (calView === 'week') {
+    var dates = getWeekDates(calOffset);
+    labelTxt = dates[0].toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' – ' + dates[6].toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  } else {
+    var dd = new Date(); dd.setDate(dd.getDate() + calOffset);
+    labelTxt = dd.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'long' });
+  }
+  var isMonth = calView === 'month';
+  navEl.innerHTML =
+    '<button id="calPrevNav" style="background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px 10px;color:var(--charcoal)">&#x2190;</button>' +
+    '<span id="calLabelInner" style="font-weight:700;font-size:.92rem;color:var(--charcoal);' + (isMonth ? 'cursor:pointer;border-bottom:1.5px dashed var(--terra);padding-bottom:1px' : '') + '">' + labelTxt + (isMonth ? ' ▾' : '') + '</span>' +
+    '<button id="calNextNav" style="background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px 10px;color:var(--charcoal)">&#x2192;</button>' +
+    '<button id="calTodayBtn" style="background:var(--cream);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;color:var(--sage);cursor:pointer;margin-left:6px">Today</button>';
+}
+
+function renderCalendar() {
+  if (!el('pg-c')) return;
+  var billLeg = el('calBillLegend');
+  if (billLeg) billLeg.style.display = userName === ADMIN ? 'flex' : 'none';
+  ['month', 'week', 'day'].forEach(function(v) {
+    var btn = el('cv-' + v); if (!btn) return;
+    btn.className = 'cal-type-btn' + (calView === v ? ' on' : '');
   });
+  updateCalNav();
+  if (calView === 'month') renderCalMonth();
+  else if (calView === 'week') renderCalWeek();
+  else renderCalDay();
 }
 
 function renderCalMonth() {
@@ -164,21 +150,21 @@ function renderCalMonth() {
   var today = todayKey();
   var firstDay = mdata.days[0].getDay(); if (firstDay === 0) firstDay = 7;
   var wkKeys = [];
-  mdata.days.forEach(function (d) {
+  mdata.days.forEach(function(d) {
     var mon = new Date(d); var dow = mon.getDay() || 7; mon.setDate(mon.getDate() - dow + 1);
     var wk = dKey(mon); if (wkKeys.indexOf(wk) < 0) wkKeys.push(wk);
   });
-  loadPlannerForCalendar(wkKeys, function () {
+  loadPlannerForCalendar(wkKeys, function() {
     var html = '<div class="cal-month-grid">';
-    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) { html += '<div class="cal-dow">' + d + '</div>'; });
+    ['M','T','W','T','F','S','S'].forEach(function(d) { html += '<div class="cal-dow">' + d + '</div>'; });
     for (var i = 1; i < firstDay; i++) html += '<div></div>';
-    mdata.days.forEach(function (d) {
+    mdata.days.forEach(function(d) {
       var dk = dKey(d); var isT = dk === today;
       var items = getCalItemsForDate(dk).concat(getMealsForDate(dk));
       var shown = items.slice(0, 2); var more = items.length - 2;
       html += '<div class="cal-day' + (isT ? ' today' : '') + '" data-caldk="' + dk + '">';
       html += '<div class="cal-day-num">' + d.getDate() + '</div>';
-      shown.forEach(function (item) {
+      shown.forEach(function(item) {
         var t = CAL_TYPES[item.type] || CAL_TYPES.personal;
         html += '<div class="cal-event-pill" style="background:' + t.bg + ';color:' + t.color + '">' + t.icon + ' ' + esc(item.text.length > 10 ? item.text.slice(0, 10) + '…' : item.text) + '</div>';
       });
@@ -194,19 +180,19 @@ function renderCalWeek() {
   var dates = getWeekDates(calOffset);
   var today = todayKey();
   var wk = dKey(dates[0]);
-  loadPlannerForCalendar([wk], function () {
+  loadPlannerForCalendar([wk], function() {
     var html = '<div class="cal-week-grid">';
     html += '<div class="cal-week-time-hdr"></div>';
-    dates.forEach(function (d, i) {
+    dates.forEach(function(d, i) {
       var dk = dKey(d); var isT = dk === today;
       html += '<div class="cal-week-col-hdr' + (isT ? ' cal-week-today' : '') + '"><div class="cal-week-day-name">' + DAYS[i] + '</div><div class="cal-week-day-num">' + d.getDate() + '</div></div>';
     });
     html += '<div class="cal-week-time" style="font-size:.65rem;padding:4px">All day</div>';
-    dates.forEach(function (d) {
+    dates.forEach(function(d) {
       var dk = dKey(d);
       var items = getCalItemsForDate(dk).concat(getMealsForDate(dk));
       html += '<div class="cal-week-events">';
-      items.forEach(function (item) {
+      items.forEach(function(item) {
         var t = CAL_TYPES[item.type] || CAL_TYPES.personal;
         html += '<div class="cal-event-pill" style="background:' + t.bg + ';color:' + t.color + ';margin-bottom:3px">' + t.icon + ' ' + esc(item.text.length > 12 ? item.text.slice(0, 12) + '…' : item.text) + '</div>';
       });
@@ -221,25 +207,25 @@ function renderCalDay() {
   var d = new Date(); d.setDate(d.getDate() + calOffset);
   var dk = dKey(d);
   var wk = dKey(getWeekDates(Math.floor(calOffset / 7))[0]);
-  loadPlannerForCalendar([wk], function () {
+  loadPlannerForCalendar([wk], function() {
     var allItems = getCalItemsForDate(dk).concat(getMealsForDate(dk));
     if (!allItems.length) {
       el('calGrid').innerHTML = '<div class="cal-day-view"><div class="cal-day-section"><div style="text-align:center;padding:28px;color:var(--muted)">Nothing on ☀️<br><span style="font-size:.82rem">Enjoy the quiet!</span></div></div></div>';
       return;
     }
     var groups = { birthday: [], event: [], meal: [], personal: [] };
-    allItems.forEach(function (item) {
+    allItems.forEach(function(item) {
       var g = item.type === 'birthday' ? 'birthday' : item.type === 'event' ? 'event' : item.type === 'meal' ? 'meal' : 'personal';
       if (!groups[g]) groups[g] = [];
       groups[g].push(item);
     });
     var sectionTitles = { birthday: '🎂 Birthdays', event: '📅 Events', meal: '🍽 Meals', personal: '📋 Schedule' };
     var html = '<div class="cal-day-view">';
-    Object.keys(groups).forEach(function (g) {
+    Object.keys(groups).forEach(function(g) {
       if (!groups[g].length) return;
       var t = CAL_TYPES[g] || CAL_TYPES.personal;
       html += '<div class="cal-day-section"><div class="cal-day-section-title" style="color:' + t.color + '">' + sectionTitles[g] + '</div>';
-      groups[g].forEach(function (item) {
+      groups[g].forEach(function(item) {
         html += '<div class="cal-day-item" style="background:' + t.bg + ';border-color:' + t.border + '">';
         html += '<div class="cal-day-item-icon">' + t.icon + '</div>';
         html += '<div style="flex:1"><div class="cal-day-item-text">' + esc(item.text) + '</div>';
@@ -260,20 +246,20 @@ function renderCalDay() {
   });
 }
 
-// ─── FIREBASE LISTENER ─────────────────────────────────────────────────────
-db.ref('calendarEvents').on('value', function (snap) {
-  calEvents = []; snap.forEach(function (c) { calEvents.push(c.val()); });
+// ─── FIREBASE ──────────────────────────────────────────────────────────────
+db.ref('calendarEvents').on('value', function(snap) {
+  calEvents = []; snap.forEach(function(c) { calEvents.push(c.val()); });
   if (el('pg-c') && el('pg-c').classList.contains('on')) renderCalendar();
 });
 
 var editCalId = '';
 function openCalEdit(id) {
-  var ev = calEvents.find(function (x) { return x.id === id; }); if (!ev) return;
+  var ev = calEvents.find(function(x) { return x.id === id; }); if (!ev) return;
   editCalId = id;
   el('calAddName').value = ev.name || '';
   el('calAddDate').value = ev.date || '';
   el('calAddNotes').value = ev.notes || '';
-  el('calTypeSelect').querySelectorAll('.cal-type-btn').forEach(function (b) {
+  el('calTypeSelect').querySelectorAll('.cal-type-btn').forEach(function(b) {
     b.classList.toggle('on', b.dataset.caltype === (ev.type === 'birthday' ? 'birthday' : ev.type === 'personal' ? 'personal' : 'event'));
   });
   el('calBirthdayFields').style.display = ev.type === 'birthday' ? 'block' : 'none';
@@ -286,31 +272,87 @@ function openCalEdit(id) {
   el('calAddMod').classList.remove('h');
 }
 
-// ─── DOM LISTENERS ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
+// ─── ALL LISTENERS ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
 
+  // ── Nav delegation — single handler, no stacking ──
+  document.addEventListener('click', function(e) {
+    var t = e.target;
+
+    // Prev / Next / Today — matched by ID on dynamically rendered buttons
+    if (t.id === 'calPrevNav') { calOffset--; renderCalendar(); return; }
+    if (t.id === 'calNextNav') { calOffset++; renderCalendar(); return; }
+    if (t.id === 'calTodayBtn') { calOffset = 0; renderCalendar(); return; }
+    if (t.id === 'calLabelInner' && calView === 'month') { openMonthJump(); return; }
+    if (t.id === 'calJumpClose') { el('calMonthJumpModal').remove(); return; }
+
+    // Month jump modal — pick a month
+    var jumpBtn = t.closest('[data-jumpval]');
+    if (jumpBtn && el('calMonthJumpModal')) {
+      calOffset = parseInt(jumpBtn.dataset.jumpval);
+      el('calMonthJumpModal').remove();
+      renderCalendar(); return;
+    }
+
+    // Tap outside modal to close
+    if (t.id === 'calMonthJumpModal') { t.remove(); return; }
+
+    // View toggle
+    var cv = t.closest('[data-calview]');
+    if (cv && el('pg-c') && el('pg-c').classList.contains('on')) {
+      calView = cv.dataset.calview;
+      calOffset = 0;
+      ['month','week','day'].forEach(function(v) { var b = el('cv-'+v); if (b) b.className = 'cal-type-btn'+(calView===v?' on':''); });
+      renderCalendar(); return;
+    }
+
+    // Tap day in month → day view
+    var caldk = t.closest('[data-caldk]');
+    if (caldk && el('pg-c') && el('pg-c').classList.contains('on')) {
+      calView = 'day';
+      var clicked = new Date(caldk.dataset.caldk + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      calOffset = Math.round((clicked - today) / 86400000);
+      ['month','week','day'].forEach(function(v) { var b = el('cv-'+v); if (b) b.className = 'cal-type-btn'+(calView===v?' on':''); });
+      renderCalendar(); return;
+    }
+
+    // Edit / delete calendar event
+    var caledit = t.closest('[data-caledit]');
+    if (caledit) { openCalEdit(caledit.dataset.caledit); return; }
+    var caldel = t.closest('[data-caldel]');
+    if (caldel) {
+      if (!confirm('Delete this event?')) return;
+      db.ref('calendarEvents/' + caldel.dataset.caldel).remove();
+      setTimeout(renderCalendar, 400); return;
+    }
+  });
+
+  // ── Add to Calendar modal ──
   var calAddBtn = el('calAddBtn');
-  if (calAddBtn) calAddBtn.addEventListener('click', function () {
+  if (calAddBtn) calAddBtn.addEventListener('click', function() {
     if (!userName) { alert('Sign in first!'); return; }
     el('calAddName').value = '';
     el('calAddDate').value = todayKey();
     el('calAddNotes').value = '';
     el('calBirthdayFields').style.display = 'none';
     el('calPersonalFields').style.display = 'none';
+    var savBtn = el('calAddSave'); if (savBtn) savBtn.dataset.editing = '';
+    editCalId = '';
     el('calAddMod').classList.remove('h');
   });
 
   var calAddCancel = el('calAddCancel');
-  if (calAddCancel) calAddCancel.addEventListener('click', function () {
+  if (calAddCancel) calAddCancel.addEventListener('click', function() {
     el('calAddMod').classList.add('h');
     editCalId = '';
     var savBtn = el('calAddSave'); if (savBtn) savBtn.dataset.editing = '';
   });
 
   var calTypeSelect = el('calTypeSelect');
-  if (calTypeSelect) calTypeSelect.addEventListener('click', function (e) {
+  if (calTypeSelect) calTypeSelect.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-caltype]'); if (!btn) return;
-    calTypeSelect.querySelectorAll('.cal-type-btn').forEach(function (b) { b.classList.remove('on'); });
+    calTypeSelect.querySelectorAll('.cal-type-btn').forEach(function(b) { b.classList.remove('on'); });
     btn.classList.add('on');
     var type = btn.dataset.caltype;
     el('calBirthdayFields').style.display = type === 'birthday' ? 'block' : 'none';
@@ -318,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   var calAddSave = el('calAddSave');
-  if (calAddSave) calAddSave.addEventListener('click', function () {
+  if (calAddSave) calAddSave.addEventListener('click', function() {
     var name = el('calAddName').value.trim(); if (!name) { alert('Enter a name.'); return; }
     var date = el('calAddDate').value; if (!date) { alert('Select a date.'); return; }
     var typeBtn = el('calTypeSelect').querySelector('.cal-type-btn.on');
@@ -331,48 +373,19 @@ document.addEventListener('DOMContentLoaded', function () {
       el('calAddMod').classList.add('h'); editCalId = ''; calAddSave.dataset.editing = '';
       setTimeout(renderCalendar, 400); return;
     }
+    var id = 'ce' + Date.now();
     if (type === 'personal') {
       var ptype = el('calPersonalType').value;
-      var id = 'i' + Date.now();
+      id = 'i' + Date.now();
       db.ref('personal/' + userName + '/days/' + date + '/items/' + id).set({ id: id, text: name, type: ptype });
     } else if (type === 'birthday') {
       var byear = el('calBirthYear').value;
-      var recurring = el('calBirthdayRecurring').checked;
-      var id = 'ce' + Date.now();
-      db.ref('calendarEvents/' + id).set({ id: id, name: name, date: date, type: 'birthday', birthYear: byear ? parseInt(byear) : null, recurring: recurring, notes: notes, by: userName });
+      db.ref('calendarEvents/' + id).set({ id: id, name: name, date: date, type: 'birthday', birthYear: byear ? parseInt(byear) : null, recurring: el('calBirthdayRecurring').checked, notes: notes, by: userName });
     } else {
-      var id = 'ce' + Date.now();
       db.ref('calendarEvents/' + id).set({ id: id, name: name, date: date, type: type, notes: notes, by: userName });
     }
     el('calAddMod').classList.add('h');
     setTimeout(renderCalendar, 400);
-  });
-
-  document.addEventListener('click', function (e) {
-    var cv = e.target.closest('[data-calview]');
-    if (cv && el('pg-c') && el('pg-c').classList.contains('on')) {
-      calView = cv.dataset.calview;
-      calOffset = 0;
-      ['month', 'week', 'day'].forEach(function (v) { var b = el('cv-' + v); if (b) b.className = 'cal-type-btn' + (calView === v ? ' on' : ''); });
-      renderCalendar(); return;
-    }
-    var caldk = e.target.closest('[data-caldk]');
-    if (caldk && el('pg-c') && el('pg-c').classList.contains('on')) {
-      calView = 'day';
-      var clicked = new Date(caldk.dataset.caldk + 'T00:00:00');
-      var today = new Date(); today.setHours(0, 0, 0, 0);
-      calOffset = Math.round((clicked - today) / 86400000);
-      ['month', 'week', 'day'].forEach(function (v) { var b = el('cv-' + v); if (b) b.className = 'cal-type-btn' + (calView === v ? ' on' : ''); });
-      renderCalendar(); return;
-    }
-    var caledit = e.target.closest('[data-caledit]');
-    if (caledit) { openCalEdit(caledit.dataset.caledit); return; }
-    var caldel = e.target.closest('[data-caldel]');
-    if (caldel) {
-      if (!confirm('Delete this calendar event?')) return;
-      db.ref('calendarEvents/' + caldel.dataset.caldel).remove();
-      setTimeout(renderCalendar, 400); return;
-    }
   });
 
 });
