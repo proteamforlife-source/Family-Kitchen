@@ -97,7 +97,7 @@ document.addEventListener('click',function(e){
   var editr=t.closest('[data-editr]');
   if(editr){
     var erid=editr.dataset.editr;
-    attemptProtectedAction(erid,function(){el('ef-'+erid).classList.toggle('on');});
+    attemptProtectedAction(erid,function(){el('ef-'+erid).classList.add('on');});
     return;
   }
 
@@ -105,7 +105,7 @@ document.addEventListener('click',function(e){
   var editt=t.closest('[data-editt]');
   if(editt){
     var etid=editt.dataset.editt;
-    attemptProtectedAction(etid,function(){el('tef-'+etid).classList.toggle('on');});
+    attemptProtectedAction(etid,function(){el('tef-'+etid).classList.add('on');});
     return;
   }
 
@@ -211,7 +211,7 @@ document.addEventListener('click',function(e){
   var addd=t.closest('[data-addd]');if(addd){dayCtx={dk:addd.dataset.addd};el('dayModTitle').textContent='Add to '+addd.dataset.addd;el('dayModInp').value='';el('dayModType').value='B';el('dayMod').classList.remove('h');setTimeout(function(){el('dayModInp').focus();},80);return;}
   var dday=t.closest('[data-dday]');if(dday){db.ref('personal/'+userName+'/days/'+dday.dataset.dk+'/items/'+dday.dataset.dday).remove();return;}
   var addpr=t.closest('[data-addpr]');if(addpr){var pn=el('prName').value.trim();if(!pn){alert('Enter a name.');return;}var prec={id:'pr'+Date.now(),name:pn,cat:el('prCat').value||'General',tags:el('prTags').value.split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean),by:userName||'Me',ings:el('prIngs').value.split(',').map(function(s){return s.trim();}).filter(Boolean),steps:el('prSteps').value.trim()};db.ref('personal/'+userName+'/myRecipes/'+prec.id).set(prec);['prName','prTags','prIngs','prSteps'].forEach(function(i){el(i).value='';});return;}
-  var editpr=t.closest('[data-editpr]');if(editpr){el('pef-'+editpr.dataset.editpr).classList.toggle('on');return;}
+  var editpr=t.closest('[data-editpr]');if(editpr){el('pef-'+editpr.dataset.editpr).classList.add('on');return;}
   var cancelpr=t.closest('[data-cancelpr]');if(cancelpr){el('pef-'+cancelpr.dataset.cancelpr).classList.remove('on');return;}
   var savepr=t.closest('[data-savepr]');if(savepr){var pid=savepr.dataset.savepr;db.ref('personal/'+userName+'/myRecipes/'+pid).update({name:el('pen-'+pid).value.trim(),cat:el('pec-'+pid).value||'General',tags:el('pet-'+pid).value.split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean),ings:el('pei-'+pid).value.split(',').map(function(s){return s.trim();}).filter(Boolean),steps:el('pes-'+pid).value.trim()});el('pef-'+pid).classList.remove('on');return;}
   var shrpr=t.closest('[data-shrpr]');if(shrpr){var myr3=personalData.myRecipes||{},sr=myr3[shrpr.dataset.shrpr];if(!sr)return;db.ref('recipes/'+sr.id).set(Object.assign({},sr,{by:userName,notes:{},ratings:{},testing:false}));alert('"'+sr.name+'" shared!');return;}
