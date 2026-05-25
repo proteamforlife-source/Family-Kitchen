@@ -118,7 +118,12 @@ document.addEventListener('click', function(e) {
   var dqa = t.closest('[data-dqa]'); if (dqa) { if (!userName) return; var ans = dqa.dataset.dqa; var ref = db.ref('dinnerQ/'+todayKey()+'/'+userName); ref.once('value', function(s){ if(s.val()===ans){ ref.remove(); } else { ref.set(ans); } setTimeout(renderDashboard,400); }); return; }
 
   var st2 = t.closest('[data-switchtab]'); if (st2 && !t.closest('[data-addmeal]') && !t.closest('[data-quickdinner]')) { switchTab(st2.dataset.switchtab); return; }
-
+var lockr=t.closest('[data-lockr]');
+  if(lockr){var lrid=lockr.dataset.lockr;var rec=recipes.find(function(r){return r.id===lrid;});if(!rec)return;if(rec.locked){openPinModal(function(){db.ref('recipes/'+lrid+'/locked').set(false);});}else{db.ref('recipes/'+lrid+'/locked').set(true);}return;}
+  var lockt=t.closest('[data-lockt]');
+  if(lockt){var ltid=lockt.dataset.lockt;var trec=testRecipes.find(function(r){return r.id===ltid;});if(!trec)return;if(trec.locked){openPinModal(function(){db.ref('recipes/'+ltid+'/locked').set(false);});}else{db.ref('recipes/'+ltid+'/locked').set(true);}return;}
+  var blocked=t.closest('[data-blocked]');
+  if(blocked){var action=blocked.dataset.blocked;openPinModal(function(){if(action==='edit'){var eid=blocked.dataset.editr||blocked.dataset.editt;if(blocked.dataset.editr)el('ef-'+eid).classList.toggle('on');if(blocked.dataset.editt)el('tef-'+eid).classList.toggle('on');}if(action==='delete'){var drid=blocked.dataset.delr;if(!confirm('Remove?'))return;db.ref('recipes/'+drid).remove();}});return;}
   var sc2 = t.closest('[data-switchchat]'); if (sc2) { openChat(); return; }
 
   var qd = t.closest('[data-quickdinner]'); if (qd) { var todayIdx2 = new Date().getDay()-1; if (todayIdx2 < 0) todayIdx2 = 6; mealCtx = { wk: dKey(getWeekDates(0)[0]), di: String(todayIdx2), slot: 'D' }; el('mealModTitle').textContent = 'Suggest for Tonight'; el('mealModInp').value = ''; el('mealModUrl').value = ''; el('mealMod').classList.remove('h'); return; }
@@ -143,8 +148,7 @@ document.addEventListener('click', function(e) {
 
   var editt = t.closest('[data-editt]'); if (editt) { el('tef-'+editt.dataset.editt).classList.toggle('on'); return; }
   var cancelt = t.closest('[data-cancelt]'); if (cancelt) { el('tef-'+cancelt.dataset.cancelt).classList.remove('on'); return; }
-  var savet = t.closest('[data-savet]'); if (savet) { var tid = savet.dataset.savet; db.ref('recipes/'+tid).update({ name:el('ten-'+tid).value.trim(), cat:el('tec-'+tid).value, tags:el('tet-'+tid).value.split(',').map(function(t){return t.trim();}).filter(Boolean), ings:el('tei-'+tid).value.split(',').map(function(s){return s.trim();}).filter(Boolean), steps:el('tes-'+tid).value.trim() }); el('tef-'+tid).classList.remove('on'); return; }
-
+var savet=t.closest('[data-savet]');if(savet){var tid=savet.dataset.savet;db.ref('recipes/'+tid).update({name:el('ten-'+tid).value.trim(),cat:el('tec-'+tid).value,tags:el('tet-'+tid)?el('tet-'+tid).value.split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean):[],ings:el('tei-'+tid).value.split(',').map(function(s){return s.trim();}).filter(Boolean),steps:el('tes-'+tid).value.trim()});el('tef-'+tid).classList.remove('on');return;}
   var printr = t.closest('[data-printr]'); if (printr) { var pr2 = recipes.find(function(r){return r.id===printr.dataset.printr;})||testRecipes.find(function(r){return r.id===printr.dataset.printr;}); if (pr2) printRecipe(pr2); return; }
 
   var delr = t.closest('[data-delr]'); if (delr) { if (userName !== ADMIN) { alert('Only Mum can delete.'); return; } if (!confirm('Remove?')) return; db.ref('recipes/'+delr.dataset.delr).remove(); return; }
