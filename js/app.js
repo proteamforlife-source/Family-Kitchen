@@ -166,7 +166,7 @@ document.addEventListener('click',function(e){
       var wk2=sel[0],di2=sel[1],slot2=el('plannerModSlot').value;
       var notes2=el('plannerModNotes').value.trim();
       var mid='m'+Date.now();
-      db.ref('planner/'+wk2+'/'+di2+'/'+slot2+'/'+mid).set({id:mid,name:pname,votes:{},cooker:'',by:userName,notes:notes2||undefined});
+      db.ref('planner/'+wk2+'/'+di2+'/'+slot2+'/'+mid).set({id:mid,name:pname,votes:{},cooker:'',by:userName,notes:notes2||''});
       el('plannerMod').classList.add('h');
     });
     return;
