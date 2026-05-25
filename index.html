@@ -270,5 +270,40 @@
 <script src="js/mypage.js"></script>
 <script src="js/testing.js"></script>
 <script src="js/app.js"></script>
+<!-- RECIPE PIN MODAL -->
+<div class="pin-modal-wrap h" id="pinMod">
+  <div class="pin-modal-box" id="pinModBox">
+    <h3 id="pinModTitle">🔒 Recipe Locked</h3>
+    <p id="pinModDesc">Enter your household PIN to continue</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot2" id="pd0"></div>
+      <div class="pin-dot2" id="pd1"></div>
+      <div class="pin-dot2" id="pd2"></div>
+      <div class="pin-dot2" id="pd3"></div>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="pin-pad2" id="pinPad">
+      <button class="pin-key2" data-pk="1">1</button>
+      <button class="pin-key2" data-pk="2">2</button>
+      <button class="pin-key2" data-pk="3">3</button>
+      <button class="pin-key2" data-pk="4">4</button>
+      <button class="pin-key2" data-pk="5">5</button>
+      <button class="pin-key2" data-pk="6">6</button>
+      <button class="pin-key2" data-pk="7">7</button>
+      <button class="pin-key2" data-pk="8">8</button>
+      <button class="pin-key2" data-pk="9">9</button>
+      <button class="pin-key2" data-pk="back" style="font-size:.85rem">⌫</button>
+      <button class="pin-key2" data-pk="0">0</button>
+      <button class="pin-key2" data-pk="clear" style="font-size:.75rem">CLR</button>
+    </div>
+    <!-- PIN setup mode (shown when no PIN exists) -->
+    <div id="pinSetupWrap" style="display:none">
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:8px">No PIN set yet. Create a 4-digit PIN for your household:</p>
+      <input class="pin-setup-inp" type="number" id="pinSetupInp" placeholder="e.g. 1234" maxlength="4">
+      <button class="btn" style="width:100%;margin-bottom:8px" id="pinSetupSave">Set PIN</button>
+    </div>
+    <button class="pin-cancel-btn" id="pinCancel">Cancel</button>
+  </div>
+</div>
 </body>
 </html>

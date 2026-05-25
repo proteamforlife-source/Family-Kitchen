@@ -2,6 +2,11 @@
 // Loaded LAST.
 
 var tabs = ['d','r','p','e','c','b','t','s','m'];
+var pinBuffer='';
+var pinCallback=null;
+var cachedPin=null;
+var plannerCtxRecId='';
+db.ref('settings/recipePin').on('value',function(snap){cachedPin=snap.val()||null;});
 
 function switchTab(id) {
   tabs.forEach(function(t) {
