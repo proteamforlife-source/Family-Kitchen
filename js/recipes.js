@@ -13,36 +13,42 @@ function renderRecipes(){
   var isAdmin=userName===ADMIN;var diffC={easy:'#eaf3ea',medium:'#fff8e1',hard:'#ffeaea'};var diffL={easy:'Easy',medium:'Medium',hard:'Hard'};
   container.innerHTML=list.map(function(r){
     var notes=r.notes?Object.values(r.notes):[];var rd=getAvgRating(r);var myR=r.ratings&&r.ratings[userName]?r.ratings[userName].stars:0;
-    var locked=!!r.locked;
-    var lockIcon=locked?'🔒':'🔓';
-    var lockClass=locked?'rlock-btn locked':'rlock-btn';
-    var cardBtnsClass=locked?'rbtns-locked':'';
+    var locked=!!r.locked;var lockIcon=locked?'🔒':'🔓';var lockClass=locked?'rlock-btn locked':'rlock-btn';
     return'<div class="rc">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1">'+
-        (r.photo?'<img src="'+esc(r.photo)+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;margin-bottom:9px;cursor:pointer" data-viewimg="'+esc(r.photo)+'" alt="">':'')+
-        '<b style="font-size:.96rem">'+esc(r.name)+'</b>'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">'+
-          '<span style="background:#f0e8ff;color:#6a3a9a;border:1px solid #c4a0f0;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600">'+esc(r.cat||'')+'</span>'+
-          (r.servings?'<span style="font-size:.74rem;color:var(--muted)">Serves '+esc(r.servings)+'</span>':'')+
-          (r.diff?'<span style="background:'+diffC[r.diff]+';padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600">'+diffL[r.diff]+'</span>':'')+
-          '<span style="font-size:.74rem;color:var(--muted)">by '+esc(r.by)+'</span>'+
-        '</div>'+
-        '<div style="margin-top:4px">'+(r.tags||[]).map(function(t){return'<span class="tag" style="cursor:default">'+esc(t)+'</span>';}).join('')+'</div>'+
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">'+avgStarsHtml(rd.avg,r.id)+'<span class="rating-count" id="avgc-'+r.id+'">'+(rd.count?rd.avg.toFixed(1)+' ('+rd.count+')':'No ratings')+'</span></div>'+
-        (userName?'<div style="margin-top:3px;display:flex;align-items:center;gap:5px"><span style="font-size:.73rem;color:var(--muted)">Your rating:</span>'+starsHtml(r.id,myR,true)+'</div>':'')+
+      (r.photo?'<img src="'+esc(r.photo)+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;margin-bottom:9px;cursor:pointer" data-viewimg="'+esc(r.photo)+'" alt="">':'')+
+      '<b style="font-size:.96rem">'+esc(r.name)+'</b>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">'+
+      '<span style="background:#f0e8ff;color:#6a3a9a;border:1px solid #c4a0f0;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600">'+esc(r.cat||'')+'</span>'+
+      (r.servings?'<span style="font-size:.74rem;color:var(--muted)">Serves '+esc(r.servings)+'</span>':'')+
+      (r.diff?'<span style="background:'+diffC[r.diff]+';padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600">'+diffL[r.diff]+'</span>':'')+
+      '<span style="font-size:.74rem;color:var(--muted)">by '+esc(r.by)+'</span>'+
+      '</div>'+
+      '<div style="margin-top:4px">'+(r.tags||[]).map(function(t){return'<span class="tag" style="cursor:default">'+esc(t)+'</span>';}).join('')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">'+avgStarsHtml(rd.avg,r.id)+'<span class="rating-count" id="avgc-'+r.id+'">'+(rd.count?rd.avg.toFixed(1)+' ('+rd.count+')':'No ratings')+'</span></div>'+
+      (userName?'<div style="margin-top:3px;display:flex;align-items:center;gap:5px"><span style="font-size:.73rem;color:var(--muted)">Your rating:</span>'+starsHtml(r.id,myR,true)+'</div>':'')+
       '</div>'+
       '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;margin-left:7px;align-items:flex-end">'+
-        (userName?'<button class="'+lockClass+'" data-lockr="'+r.id+'" title="'+(locked?'Locked':'Unlocked')+'">'+lockIcon+'</button>':'')+
-        (userName?'<button class="obn obt" data-editr="'+r.id+'" style="font-size:.7rem;padding:3px 7px"'+(locked?' data-blocked="edit"':'')+'>Edit</button>':'')+
-        (isAdmin?'<button class="xbtn" data-delr="'+r.id+'"'+(locked?' data-blocked="delete"':'')+'>🗑</button>':'')+
+      (userName?'<button class="'+lockClass+'" data-lockr="'+r.id+'" title="'+(locked?'Locked':'Unlocked')+'">'+lockIcon+'</button>':'')+
+      (userName?'<button class="obn obt" data-editr="'+r.id+'" style="font-size:.7rem;padding:3px 7px"'+(locked?' data-blocked="edit"':'')+'>Edit</button>':'')+
+      (isAdmin?'<button class="xbtn" data-delr="'+r.id+'"'+(locked?' data-blocked="delete"':'')+'>🗑</button>':'')+
       '</div></div>'+
-      '<div class="rbtns '+cardBtnsClass+'"><button class="obn" data-togr="'+r.id+'">View</button><button class="obn obt" data-cookr="'+r.id+'">Cook</button><button class="obn" data-printr="'+r.id+'" style="border-color:#888;color:#888">Print</button>'+(userName?'<label class="obn obs" style="cursor:pointer">Photo<input type="file" accept="image/*" data-photor="'+r.id+'" style="display:none"></label>':'')+'</div>'+
-      '<div class="eform" id="ef-'+r.id+'"><input type="text" id="en-'+r.id+'" value="'+esc(r.name)+'"><select id="ec-'+r.id+'">'+PRESET_CATS.map(function(c){return'<option'+(r.cat===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select><input type="text" id="et-'+r.id+'" value="'+esc((r.tags||[]).join(', '))+'" placeholder="Tags (comma separated)"><input type="number" id="esv-'+r.id+'" value="'+esc(r.servings||'')+'" placeholder="Servings"><select id="edf-'+r.id+'"><option value="">Difficulty</option><option value="easy"'+(r.diff==='easy'?' selected':'')+'>Easy</option><option value="medium"'+(r.diff==='medium'?' selected':'')+'>Medium</option><option value="hard"'+(r.diff==='hard'?' selected':'')+'>Hard</option></select><input type="text" id="ei-'+r.id+'" value="'+esc((r.ings||[]).join(', '))+'" placeholder="Ingredients"><textarea id="es-'+r.id+'">'+esc(r.steps||'')+'</textarea><div style="display:flex;gap:6px"><button class="sm st" data-saver="'+r.id+'">Save</button><button class="sm sx" data-canceledit="'+r.id+'">Cancel</button></div></div>'+
+      '<div class="rbtns"><button class="obn" data-togr="'+r.id+'">View</button><button class="obn obt" data-cookr="'+r.id+'">Cook</button><button class="obn" data-printr="'+r.id+'" style="border-color:#888;color:#888">Print</button>'+(userName?'<label class="obn obs" style="cursor:pointer">Photo<input type="file" accept="image/*" data-photor="'+r.id+'" style="display:none"></label>':'')+'</div>'+
+      '<div class="eform" id="ef-'+r.id+'">'+
+      '<input type="text" id="en-'+r.id+'" value="'+esc(r.name)+'">'+
+      '<select id="ec-'+r.id+'">'+PRESET_CATS.map(function(c){return'<option'+(r.cat===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select>'+
+      '<input type="text" id="et-'+r.id+'" value="'+esc((r.tags||[]).join(', '))+'" placeholder="Tags (comma separated)">'+
+      '<input type="number" id="esv-'+r.id+'" value="'+esc(r.servings||'')+'" placeholder="Servings">'+
+      '<select id="edf-'+r.id+'"><option value="">Difficulty</option><option value="easy"'+(r.diff==='easy'?' selected':'')+'>Easy</option><option value="medium"'+(r.diff==='medium'?' selected':'')+'>Medium</option><option value="hard"'+(r.diff==='hard'?' selected':'')+'>Hard</option></select>'+
+      '<input type="text" id="ei-'+r.id+'" value="'+esc((r.ings||[]).join(', '))+'" placeholder="Ingredients">'+
+      '<textarea id="es-'+r.id+'">'+esc(r.steps||'')+'</textarea>'+
+      '<div style="display:flex;gap:6px"><button class="sm st" data-saver="'+r.id+'">Save</button><button class="sm sx" data-canceledit="'+r.id+'">Cancel</button></div></div>'+
       '<div class="rbody" id="rb-'+r.id+'">'+
-        (r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+
-        (r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+
-        '<h4 style="margin-top:9px">Family Notes</h4>'+notes.map(function(n){var bg=n.color||'#8A7A6E';return'<div class="note"><span>'+esc(n.text)+'</span><div style="flex-shrink:0"><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span>'+(isAdmin?'<button class="xbtn" data-delnote="'+n.id+'" data-recid="'+r.id+'">x</button>':'')+'</div></div>';}).join('')+
-        '<div class="nadd"><input type="text" placeholder="Add a note..." id="ni-'+r.id+'"><button class="sm ss" data-addnote="'+r.id+'">Add</button></div>'+
+      (r.ings&&r.ings.length?'<h4>Ingredients</h4><ul>'+r.ings.map(function(i){return'<li>'+esc(i)+'</li>';}).join('')+'</ul>':'')+
+      (r.steps?'<h4>Method</h4><p>'+esc(r.steps)+'</p>':'')+
+      '<h4 style="margin-top:9px">Family Notes</h4>'+
+      notes.map(function(n){var bg=n.color||'#8A7A6E';return'<div class="note"><span>'+esc(n.text)+'</span><div style="flex-shrink:0"><span class="nwho" style="background:'+bg+'">'+esc(n.by)+'</span>'+(isAdmin?'<button class="xbtn" data-delnote="'+n.id+'" data-recid="'+r.id+'">x</button>':'')+'</div></div>';}).join('')+
+      '<div class="nadd"><input type="text" placeholder="Add a note..." id="ni-'+r.id+'"><button class="sm ss" data-addnote="'+r.id+'">Add</button></div>'+
       '</div></div>';
   }).join('');
 }
@@ -62,4 +68,5 @@ document.addEventListener('DOMContentLoaded',function(){
   el('ckExitBtn').addEventListener('click',function(){el('cookMode').classList.remove('on');});
   el('ckPrintBtn').addEventListener('click',function(){if(currentPrintRec)printRecipe(currentPrintRec);});
   el('fmtClear').addEventListener('click',function(){el('fmtInput').value='';el('fmtResult').innerHTML='';el('fmtResult').classList.remove('on');});
-  el('fmtBtn').addEventListener('click',function(){var raw=el('fmtInput').value.trim();if(!raw){alert('Paste a recipe first!');return;}var res=el('fmtResult');res.classList.add('on');res.innerHTML='<div class="ai-loading">Formatting your recipe...</div>';fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Format this recipe into clean sections. Return ONLY JSON with keys: name, category (one of: Breakfast/Mains/Chicken/Beef/Lamb/Pork/Seafood/Vegetarian/Vegan/Salads/Soups/Sides/Snacks/Desserts/Sweet Treats/Cakes/Breads/Drinks/Other), servings (number only), ingredients (array of strings), steps (array of strings). No markdown, no preamble, just JSON.\n\nRecipe:\n'+raw}]})}).then(function(r){return r.json();}).then(function(data){try{var txt=data.content.map(function(i){return
+  el('fmtBtn').addEventListener('click',function(){var raw=el('fmtInput').value.trim();if(!raw){alert('Paste a recipe first!');return;}var res=el('fmtResult');res.classList.add('on');res.innerHTML='<div class="ai-loading">Formatting your recipe...</div>';fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Format this recipe into clean sections. Return ONLY JSON with keys: name, category, servings, ingredients (array), steps (array). No markdown, just JSON.\n\nRecipe:\n'+raw}]})}).then(function(r){return r.json();}).then(function(data){try{var txt=data.content.map(function(i){return i.text||'';}).join('');var clean=txt.replace(/```json|```/g,'').trim();var parsed=JSON.parse(clean);res.innerHTML='<div style="font-weight:700;color:var(--terra);margin-bottom:8px">'+esc(parsed.name||'Recipe')+'</div><button class="btn" style="font-size:.82rem;padding:7px 14px;margin-top:8px" data-usefmt=\''+JSON.stringify(parsed).replace(/'/g,"&#39;")+'\'>Use This Recipe</button>';}catch(err){res.innerHTML='<p style="color:var(--re)">Could not parse. Please try again.</p>';}}).catch(function(){res.innerHTML='<p style="color:var(--re)">AI formatting failed.</p>';});});
+});
