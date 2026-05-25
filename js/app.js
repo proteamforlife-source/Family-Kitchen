@@ -119,9 +119,9 @@ document.addEventListener('click', function(e) {
 
   var st2 = t.closest('[data-switchtab]'); if (st2 && !t.closest('[data-addmeal]') && !t.closest('[data-quickdinner]')) { switchTab(st2.dataset.switchtab); return; }
 var lockr=t.closest('[data-lockr]');
-  if(lockr){var lrid=lockr.dataset.lockr;var rec=recipes.find(function(r){return r.id===lrid;});if(!rec)return;if(rec.locked){openPinModal(function(){db.ref('recipes/'+lrid+'/locked').set(false);});}else{db.ref('recipes/'+lrid+'/locked').set(true);}return;}
+  if(lockr){var lrid=lockr.dataset.lockr;var rec=recipes.find(function(r){return r.id===lrid;});if(!rec)return;if(rec.locked){if(!cachedPin){db.ref('recipes/'+lrid+'/locked').set(false);}else{openPinModal(function(){db.ref('recipes/'+lrid+'/locked').set(false);});}}else{db.ref('recipes/'+lrid+'/locked').set(true);}return;}
   var lockt=t.closest('[data-lockt]');
-  if(lockt){var ltid=lockt.dataset.lockt;var trec=testRecipes.find(function(r){return r.id===ltid;});if(!trec)return;if(trec.locked){openPinModal(function(){db.ref('recipes/'+ltid+'/locked').set(false);});}else{db.ref('recipes/'+ltid+'/locked').set(true);}return;}
+  if(lockt){var ltid=lockt.dataset.lockt;var trec=testRecipes.find(function(r){return r.id===ltid;});if(!trec)return;if(trec.locked){if(!cachedPin){db.ref('recipes/'+ltid+'/locked').set(false);}else{openPinModal(function(){db.ref('recipes/'+ltid+'/locked').set(false);});}}else{db.ref('recipes/'+ltid+'/locked').set(true);}return;}
   var blocked=t.closest('[data-blocked]');
   if(blocked){var action=blocked.dataset.blocked;openPinModal(function(){if(action==='edit'){var eid=blocked.dataset.editr||blocked.dataset.editt;if(blocked.dataset.editr)el('ef-'+eid).classList.toggle('on');if(blocked.dataset.editt)el('tef-'+eid).classList.toggle('on');}if(action==='delete'){var drid=blocked.dataset.delr;if(!confirm('Remove?'))return;db.ref('recipes/'+drid).remove();}});return;}
   var sc2 = t.closest('[data-switchchat]'); if (sc2) { openChat(); return; }
