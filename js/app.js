@@ -253,3 +253,32 @@ function pinShake(){
   var box=el('pinModBox');box.classList.remove('pin-shake');void box.offsetWidth;box.classList.add('pin-shake');
   setTimeout(function(){box.classList.remove('pin-shake');},400);
 }
+// ── PIN KEYPAD ──
+document.addEventListener('click',function(e){
+  var pk=e.target.closest('[data-pk]');
+  if(!pk||!pk.closest('#pinMod'))return;
+  var key=pk.dataset.pk;
+  if(key==='back'){pinBuffer=pinBuffer.slice(0,-1);}
+  else if(key==='clear'){pinBuffer='';}
+  else if(pinBuffer.length<4){pinBuffer+=key;}
+  updatePinDots();
+  if(pinBuffer.length===4){
+    if(cachedPin&&pinBuffer===cachedPin){
+      closePinModal();if(pinCallback)pinCallback();
+    } else {
+      el('pinErr').textContent='Incorrect PIN — try again';
+      pinShake();pinBuffer='';updatePinDots();
+    }
+  }
+});
+document.addEventListener('click',function(e){
+  if(e.target.closest('#pinCancel'))closePinModal();
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#pinSetupSave'))return;
+  var v=el('pinSetupInp').value.trim();
+  if(!/^\d{4}$/.test(v)){el('pinErr').textContent='Please enter exactly 4 digits';return;}
+  db.ref('settings/recipePin').set(v);cachedPin=v;
+  el('pinSetupInp').value='';closePinModal();
+  if(pinCallback)pinCallback();
+});
