@@ -137,7 +137,7 @@ document.addEventListener('click', function(e) {
 
   var editt = t.closest('[data-editt]'); if (editt) { el('tef-'+editt.dataset.editt).classList.toggle('on'); return; }
   var cancelt = t.closest('[data-cancelt]'); if (cancelt) { el('tef-'+cancelt.dataset.cancelt).classList.remove('on'); return; }
-  var savet = t.closest('[data-savet]'); if (savet) { var tid = savet.dataset.savet; db.ref('recipes/'+tid).update({ name:el('ten-'+tid).value.trim(), cat:el('tec-'+tid).value, ings:el('tei-'+tid).value.split(',').map(function(s){return s.trim();}).filter(Boolean), steps:el('tes-'+tid).value.trim() }); el('tef-'+tid).classList.remove('on'); return; }
+  var savet = t.closest('[data-savet]'); if (savet) { var tid = savet.dataset.savet; db.ref('recipes/'+tid).update({ name:el('ten-'+tid).value.trim(), cat:el('tec-'+tid).value, tags:el('tet-'+tid).value.split(',').map(function(t){return t.trim();}).filter(Boolean), ings:el('tei-'+tid).value.split(',').map(function(s){return s.trim();}).filter(Boolean), steps:el('tes-'+tid).value.trim() }); el('tef-'+tid).classList.remove('on'); return; }
 
   var printr = t.closest('[data-printr]'); if (printr) { var pr2 = recipes.find(function(r){return r.id===printr.dataset.printr;})||testRecipes.find(function(r){return r.id===printr.dataset.printr;}); if (pr2) printRecipe(pr2); return; }
 
