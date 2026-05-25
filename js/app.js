@@ -229,19 +229,3 @@ document.addEventListener('change', function(e) {
 });
 
 init();
-.rtags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 5px;
-  margin-bottom: 2px;
-}
-.rtag {
-  font-size: .68rem;
-  background: #f0ebe5;
-  color: var(--sage);
-  border-radius: 20px;
-  padding: 2px 9px;
-  font-weight: 500;
-  letter-spacing: .01em;
-}
