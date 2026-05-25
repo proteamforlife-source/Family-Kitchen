@@ -33,6 +33,7 @@ function renderTestRecipes(){
             ) +
 
             '<b>' + esc(r.name) + '</b> <span class="test-badge">TESTING</span>' +
+      (r.tags && r.tags.length ? '<div class="rtags">' + r.tags.map(function(t){ return '<span class="rtag">' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
 
             '<div style="font-size:.74rem;color:var(--muted);margin-top:2px">' +
               esc(r.cat) + ' - by ' + esc(r.by) +
