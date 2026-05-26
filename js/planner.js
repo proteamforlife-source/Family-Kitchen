@@ -51,29 +51,28 @@ function renderPlanner() {
   var dates = getWeekDates(planOffset), ws = dates[0], we = dates[6];
   el('planLabel').textContent = ws.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' - ' + we.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   var wk = dKey(ws), today = todayKey();
-  db.ref('planner/' + wk).once('value', function (snap) {
-    var data = snap.val() || {};
-    el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
-    el('planGrid').innerHTML = dates.map(function (d, i) {
-      var dk = dKey(d), isT = dk === today, dayData = data[i] || {};
-      var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
-      var persHtml = persItems.length ? '<div style="margin-bottom:2px">' + persItems.slice(0, 3).map(function (x) {
-        return '<div class="pers-pill">' + esc(x.text.length > 9 ? x.text.slice(0, 9) + '…' : x.text) + '</div>';
-      }).join('') + '</div>' : '';
-      function slotHtml(sk, lbl) {
-        var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
-        var winner = null, maxV = 0;
-        meals.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; winner = m.id; } });
-        return '<div><div class="plan-slot-lbl">' + lbl + '</div>' + meals.map(function (m) {
-          var vc = m.votes ? Object.keys(m.votes).length : 0;
-          var myV = m.votes && m.votes[userName];
-          var isW = m.id === winner && maxV > 0;
-          return '<div class="msug' + (isW ? ' winner' : '') + '"><div class="msug-name">' + esc(m.name) + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" style="margin-left:3px;font-size:.55rem;color:var(--bl)">link</a>' : '') + '</div><div class="mvotes"><button class="vbtn' + (myV ? ' voted' : '') + '" data-vote="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">+' + vc + '</button><button class="cclaim' + (m.cooker ? ' claimed' : '') + '" data-cook="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">' + (m.cooker ? esc(m.cooker.charAt(0)) : 'Cook?') + '</button><button class="xbtn" style="font-size:.58rem" data-delmeal="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">x</button></div></div>';
-        }).join('') + '<button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">+ suggest</button></div>';
-      }
-      return '<div class="plan-day' + (isT ? ' tod' : '') + '" data-di="' + i + '" data-wk="' + wk + '" data-dk="' + dk + '"><h4>' + DAYS[i] + '</h4><div class="plan-date">' + d.getDate() + '/' + (d.getMonth() + 1) + '</div>' + persHtml + slotHtml('B', 'B') + slotHtml('L', 'L') + slotHtml('D', 'D') + '</div>';
-    }).join('');
-  });
+  // Use plannerWeekCache (kept fresh by setupPlannerListener .on()) — no .once() race
+  var data = plannerWeekCache[wk] || {};
+  el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
+  el('planGrid').innerHTML = dates.map(function (d, i) {
+    var dk = dKey(d), isT = dk === today, dayData = data[i] || {};
+    var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
+    var persHtml = persItems.length ? '<div style="margin-bottom:2px">' + persItems.slice(0, 3).map(function (x) {
+      return '<div class="pers-pill">' + esc(x.text.length > 9 ? x.text.slice(0, 9) + '…' : x.text) + '</div>';
+    }).join('') + '</div>' : '';
+    function slotHtml(sk, lbl) {
+      var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
+      var winner = null, maxV = 0;
+      meals.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; winner = m.id; } });
+      return '<div><div class="plan-slot-lbl">' + lbl + '</div>' + meals.map(function (m) {
+        var vc = m.votes ? Object.keys(m.votes).length : 0;
+        var myV = m.votes && m.votes[userName];
+        var isW = m.id === winner && maxV > 0;
+        return '<div class="msug' + (isW ? ' winner' : '') + '"><div class="msug-name">' + esc(m.name) + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" style="margin-left:3px;font-size:.55rem;color:var(--bl)">link</a>' : '') + '</div><div class="mvotes"><button class="vbtn' + (myV ? ' voted' : '') + '" data-vote="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">+' + vc + '</button><button class="cclaim' + (m.cooker ? ' claimed' : '') + '" data-cook="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">' + (m.cooker ? esc(m.cooker.charAt(0)) : 'Cook?') + '</button><button class="xbtn" style="font-size:.58rem" data-delmeal="' + m.id + '" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">x</button></div></div>';
+      }).join('') + '<button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">+ suggest</button></div>';
+    }
+    return '<div class="plan-day' + (isT ? ' tod' : '') + '" data-di="' + i + '" data-wk="' + wk + '" data-dk="' + dk + '"><h4>' + DAYS[i] + '</h4><div class="plan-date">' + d.getDate() + '/' + (d.getMonth() + 1) + '</div>' + persHtml + slotHtml('B', 'B') + slotHtml('L', 'L') + slotHtml('D', 'D') + '</div>';
+  }).join('');
 }
 
 function renderPlannerDay() {
@@ -180,9 +179,9 @@ function openDayDetail(di, wk, dk, dayData) {
 }
 
 function refreshDayDetail(di, wk, dk) {
-  db.ref('planner/' + wk + '/' + di).once('value', function (snap) {
-    openDayDetail(di, wk, dk, snap.val() || {});
-  });
+  // Read from cache (kept fresh by .on() listener) — no .once() race
+  var dayData = (plannerWeekCache[wk] && plannerWeekCache[wk][di]) || {};
+  openDayDetail(di, wk, dk, dayData);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
