@@ -35,6 +35,7 @@ if(el('pg-d').classList.contains('on')&&userName)renderDashboard();
   db.ref('calendarEvents').on('value',function(snap){calEvents=[];snap.forEach(function(c){calEvents.push(c.val());});if(el('pg-c')&&el('pg-c').classList.contains('on'))renderCalendar();});
   db.ref('dinnerQ/'+todayKey()).on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
   db.ref('planner/'+dKey(getWeekDates(0)[0])+'/'+((new Date().getDay()||7)-1)+'/D').on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
+  setupPlannerListener();
 }
 
 document.addEventListener('DOMContentLoaded',function(){
