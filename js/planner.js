@@ -220,11 +220,9 @@ function renderMonthGrid(mdata, firstDay, today, allData) {
         '<span style="font-size:.54rem;color:' + nameColor + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>' +
         '</div>';
     }
-    var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
     html += '<div style="background:#fff;border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--terra)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
       '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + ';margin-bottom:2px">' + d.getDate() + '</div>' +
       (hasAny ? slotRow('B', slotB) + slotRow('L', slotL) + slotRow('D', slotD) : '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>') +
-      (persItems.length ? '<div style="font-size:.5rem;color:var(--terra);margin-top:2px;font-weight:600">' + persItems.length + ' item' + (persItems.length > 1 ? 's' : '') + '</div>' : '') +
       '</div>';
   });
   el('planGrid').innerHTML = html;
