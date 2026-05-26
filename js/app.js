@@ -34,7 +34,7 @@ if(el('pg-d').classList.contains('on')&&userName)renderDashboard();
   db.ref('bills').on('value',function(snap){bills=[];snap.forEach(function(c){bills.push(c.val());});renderBills();if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
   db.ref('calendarEvents').on('value',function(snap){calEvents=[];snap.forEach(function(c){calEvents.push(c.val());});if(el('pg-c')&&el('pg-c').classList.contains('on'))renderCalendar();});
   db.ref('dinnerQ/'+todayKey()).on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
-  db.ref('planner/'+dKey(getWeekDates(0)[0])+'/'+((new Date().getDay()||7)-1)+'/D').on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
+  db.ref('planner/'+dKey(getWeekDates(0)[0])).on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
   setupPlannerListener();
 }
 
@@ -84,7 +84,7 @@ document.addEventListener('click',function(e){
   var dqa=t.closest('[data-dqa]');if(dqa){if(!userName)return;db.ref('dinnerQ/'+todayKey()+'/'+userName).set(dqa.dataset.dqa);setTimeout(renderDashboard,400);return;}
   var st2=t.closest('[data-switchtab]');if(st2&&!t.closest('[data-addmeal]')&&!t.closest('[data-quickdinner]')){switchTab(st2.dataset.switchtab);return;}
   var sc2=t.closest('[data-switchchat]');if(sc2){openChat();return;}
-  var qd=t.closest('[data-quickdinner]');if(qd){var todayIdx2=new Date().getDay()-1;if(todayIdx2<0)todayIdx2=6;mealCtx={wk:dKey(getWeekDates(0)[0]),di:String(todayIdx2),slot:'D'};el('mealModTitle').textContent='Suggest for Tonight';el('mealModInp').value='';el('mealModUrl').value='';el('mealMod').classList.remove('h');return;}
+  var qd=t.closest('[data-quickdinner]');if(qd){var todayIdx2=new Date().getDay()-1;if(todayIdx2<0)todayIdx2=6;mealCtx={wk:dKey(getWeekDates(0)[0]),di:String(todayIdx2),slot:'D',recipeId:null,recipeType:null};el('mealModTitle').textContent='Suggest for Tonight';el('mealModInp').value='';el('mealModUrl').value='';el('mealMod').classList.remove('h');return;}
   var uf=t.closest('[data-usefmt]');if(uf){try{var parsed=JSON.parse(uf.dataset.usefmt.replace(/&#39;/g,"'"));el('rName').value=parsed.name||'';el('rCat').value=parsed.category||'';el('rServings').value=parsed.servings||'';el('rIngs').value=(parsed.ingredients||[]).join(', ');el('rSteps').value=(parsed.steps||[]).join('\n');el('fmtResult').innerHTML='';el('fmtResult').classList.remove('on');el('fmtInput').value='';switchTab('r');window.scrollTo(0,0);alert('Recipe loaded!');}catch(err){}return;}
   var preset=t.closest('[data-preset]');if(preset&&preset.closest('#presetTags')){var pt=preset.dataset.preset,pi2=selectedPresetTags.indexOf(pt);if(pi2>-1)selectedPresetTags.splice(pi2,1);else selectedPresetTags.push(pt);buildPresetTags();return;}
   var catBtn=t.closest('[data-cat]');if(catBtn&&catBtn.closest('#catFilter')){activeCat=catBtn.dataset.cat;buildCatFilter();renderRecipes();return;}
@@ -196,12 +196,11 @@ var saver=t.closest('[data-saver]');if(saver){var rid2=saver.dataset.saver;attem
     return;
   }
 
-  var addmeal=t.closest('[data-addmeal]');if(addmeal){if(!userName){alert('Sign in first!');return;}mealCtx={wk:addmeal.dataset.wk,di:addmeal.dataset.di,slot:addmeal.dataset.slot};el('mealModTitle').textContent='Suggest for '+DAYS[parseInt(addmeal.dataset.di)];el('mealModInp').value='';el('mealModUrl').value='';el('mealMod').classList.remove('h');setTimeout(function(){el('mealModInp').focus();},80);return;}
-  var mealrec=t.closest('[data-mealrec]');if(mealrec){el('mealModInp').value=mealrec.dataset.mealrec;el('mealSugList').innerHTML='';el('mealSugList').style.display='none';return;}
+  var addmeal=t.closest('[data-addmeal]');if(addmeal){if(!userName){alert('Sign in first!');return;}mealCtx={wk:addmeal.dataset.wk,di:addmeal.dataset.di,slot:addmeal.dataset.slot,recipeId:null,recipeType:null,fromDetail:addmeal.dataset.fromdetail?true:false};el('mealModTitle').textContent='Suggest for '+DAYS[parseInt(addmeal.dataset.di)];el('mealModInp').value='';el('mealModUrl').value='';el('mealMod').classList.remove('h');setTimeout(function(){el('mealModInp').focus();},80);return;}
+  var mealrec=t.closest('[data-mealrec]');if(mealrec){el('mealModInp').value=mealrec.dataset.mealrec;if(mealrec.dataset.mealrecid){mealCtx.recipeId=mealrec.dataset.mealrecid;mealCtx.recipeType=mealrec.dataset.mealrectype||'recipe';}el('mealSugList').innerHTML='';el('mealSugList').style.display='none';return;}
   var vote=t.closest('[data-vote]');if(vote){if(!userName)return;var vref=db.ref('planner/'+vote.dataset.wk+'/'+vote.dataset.di+'/'+vote.dataset.slot+'/'+vote.dataset.vote+'/votes/'+userName);vref.once('value',function(s){if(s.val())vref.remove();else vref.set(true);setTimeout(function(){if(el('pg-d').classList.contains('on'))renderDashboard();},500);});return;}
   var cook=t.closest('[data-cook]');if(cook){if(!userName)return;var cref=db.ref('planner/'+cook.dataset.wk+'/'+cook.dataset.di+'/'+cook.dataset.slot+'/'+cook.dataset.cook+'/cooker');cref.once('value',function(s){cref.set(s.val()===userName?'':userName);setTimeout(function(){if(el('pg-d').classList.contains('on'))renderDashboard();},500);});return;}
   var delmeal=t.closest('[data-delmeal]');if(delmeal){db.ref('planner/'+delmeal.dataset.wk+'/'+delmeal.dataset.di+'/'+delmeal.dataset.slot+'/'+delmeal.dataset.delmeal).remove();return;}
-  var ddadd=t.closest('[data-ddaddmeal]');if(ddadd){var slot=ddadd.dataset.ddaddmeal,ddi=ddadd.dataset.di,dwk=ddadd.dataset.wk,inp=el('ddadd-'+slot+'-'+ddi);if(!inp||!inp.value.trim())return;var mid='m'+Date.now();db.ref('planner/'+dwk+'/'+ddi+'/'+slot+'/'+mid).set({id:mid,name:inp.value.trim(),votes:{},cooker:'',by:userName});inp.value='';setTimeout(function(){refreshDayDetail(parseInt(ddi),dwk,'');},400);return;}
   var clickday=t.closest('[data-dk]');if(clickday&&clickday.dataset.di!==undefined&&!t.closest('[data-addmeal]')&&!t.closest('[data-vote]')&&!t.closest('[data-cook]')&&!t.closest('[data-delmeal]')&&!t.closest('a')&&!t.closest('[data-plannerview]')){var cdi=parseInt(clickday.dataset.di),cwk=clickday.dataset.wk,cdk=clickday.dataset.dk;if(cwk)db.ref('planner/'+cwk+'/'+cdi).once('value',function(snap){openDayDetail(cdi,cwk,cdk,snap.val()||{});});return;}
   var convBtn=t.closest('[data-conv]');if(convBtn&&convBtn.closest('#chatTabs')){switchConvo(convBtn.dataset.conv,convBtn.dataset.cname,convBtn.dataset.gid||'');return;}
   var addmembers=t.closest('[data-addmembers]');if(addmembers){openAddMembers(addmembers.dataset.addmembers);return;}

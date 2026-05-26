@@ -8,12 +8,15 @@ function saveMealSug() {
   var url = el('mealModUrl').value.trim();
   var id = 'm' + Date.now();
   var meal = { id: id, name: v, votes: {}, cooker: '', by: userName };
-  if (url) meal.url = url;   
+  if (url) meal.url = url;
+  if (mealCtx.recipeId) { meal.recipeId = mealCtx.recipeId; meal.recipeType = mealCtx.recipeType; }
   db.ref('planner/' + mealCtx.wk + '/' + mealCtx.di + '/' + mealCtx.slot + '/' + id).set(meal);
   el('mealMod').classList.add('h');
   el('mealModInp').value = '';
   el('mealModUrl').value = '';
   el('mealSugList').innerHTML = '';
+  // If triggered from day detail modal, refresh it to show the new meal
+  if (mealCtx.fromDetail) { refreshDayDetail(parseInt(mealCtx.di), mealCtx.wk, ''); }
 }
 
 function setupPlannerListener() {
@@ -24,7 +27,10 @@ function setupPlannerListener() {
   var dates = getWeekDates(planOffset), wk = dKey(dates[0]);
   if (plannerRef) plannerRef.off();
   plannerRef = db.ref('planner/' + wk);
-  plannerRef.on('value', function () { renderPlanner(); });
+  plannerRef.on('value', function (snap) {
+    plannerWeekCache[wk] = snap.val() || {};
+    renderPlanner();
+  });
 }
 
 function updatePlannerViewBtns() {
@@ -159,7 +165,7 @@ function openDayDetail(di, wk, dk, dayData) {
     return '<div class="dd-slot"><div class="dd-slot-hdr">' + lbl + '</div>' + meals.map(function (m) {
       var vc = m.votes ? Object.keys(m.votes).length : 0, myV = m.votes && m.votes[userName];
       return '<div class="dd-meal"><div class="dd-meal-name">' + esc(m.name) + (m.url ? ' <a href="' + esc(m.url) + '" target="_blank" style="font-size:.75rem;color:var(--bl)">link</a>' : '') + '</div><div class="dd-meal-actions"><button class="vbtn' + (myV ? ' voted' : '') + ' sm" data-vote="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" style="font-size:.8rem;padding:5px 10px">+' + vc + '</button><select class="dd-cook-sel" data-setcook="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '"><option value="">Who is cooking?</option>' + memberOpts + '</select>' + (m.cooker ? '<span style="font-size:.78rem;color:var(--sage);font-weight:700">' + esc(m.cooker) + '</span>' : '') + '<button class="xbtn" data-delmeal="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '">x</button></div></div>';
-    }).join('') + '<div class="dd-add"><input type="text" placeholder="+ Add meal..." id="ddadd-' + sk + '-' + di + '"><button class="sm st" data-ddaddmeal="' + sk + '" data-wk="' + wk + '" data-di="' + di + '">Add</button></div></div>';
+    }).join('') + '<div class="dd-add"><button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" data-fromdetail="1">+ suggest</button></div></div>';
   }
   el('dayDetailBody').innerHTML = slotDetailHtml('B', 'Breakfast') + slotDetailHtml('L', 'Lunch') + slotDetailHtml('D', 'Dinner');
   el('dayDetailBody').querySelectorAll('[data-setcook]').forEach(function (sel) {
@@ -213,7 +219,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!m.length) { list.style.display = 'none'; return; }
       list.style.display = 'block';
       list.innerHTML = m.map(function (r) {
-        return '<div style="padding:5px 8px;cursor:pointer;font-size:.84rem;border-radius:6px;background:var(--cream);margin-bottom:2px" data-mealrec="' + esc(r.name) + '">' + esc(r.name) + '</div>';
+        var rtype = r.testing ? 'test' : 'recipe';
+        return '<div style="padding:5px 8px;cursor:pointer;font-size:.84rem;border-radius:6px;background:var(--cream);margin-bottom:2px" data-mealrec="' + esc(r.name) + '" data-mealrecid="' + esc(r.id) + '" data-mealrectype="' + rtype + '">' + esc(r.name) + '</div>';
       }).join('');
     });
   }
