@@ -10,9 +10,9 @@ function saveMealSug() {
   var meal = { id: id, name: v, votes: {}, cooker: '', by: userName };
   if (url) meal.url = url;
   if (mealCtx.recipeId) { meal.recipeId = mealCtx.recipeId; meal.recipeType = mealCtx.recipeType; }
-  var savedCtx = mealCtx.fromDetail ? { di: parseInt(mealCtx.di), wk: mealCtx.wk } : null;
+  var savedCtx = mealCtx.fromDetail ? { di: parseInt(mealCtx.di), wk: mealCtx.wk, dk: mealCtx.dk || '' } : null;
   db.ref('planner/' + mealCtx.wk + '/' + mealCtx.di + '/' + mealCtx.slot + '/' + id).set(meal, function() {
-    if (savedCtx) { el('dayDetailMod').classList.remove('h'); refreshDayDetail(savedCtx.di, savedCtx.wk, ''); }
+    if (savedCtx) { el('dayDetailMod').classList.remove('h'); refreshDayDetail(savedCtx.di, savedCtx.wk, savedCtx.dk); }
   });
   el('mealMod').classList.add('h');
   el('mealModInp').value = '';
@@ -28,7 +28,16 @@ function setupPlannerListener() {
   var dates = getWeekDates(planOffset), wk = dKey(dates[0]);
   if (plannerRef) plannerRef.off();
   plannerRef = db.ref('planner/' + wk);
-  plannerRef.on('value', function (snap) { renderPlanner(snap.val() || {}); });
+  plannerRef.on('value', function (snap) {
+    var wkData = snap.val() || {};
+    if (plannerView === 'day') {
+      var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planOffset);
+      var dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
+      renderPlannerDay(wkData[dayIdx] || {});
+    } else {
+      renderPlanner(wkData);
+    }
+  });
 }
 
 function updatePlannerViewBtns() {
@@ -77,14 +86,14 @@ function renderPlanner(weekData) {
   }
 }
 
-function renderPlannerDay() {
+function renderPlannerDay(dayData) {
   var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planOffset);
   var dk = dKey(dayDate), dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
   el('planLabel').textContent = dayDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
   el('planGrid').style.gridTemplateColumns = '1fr';
   var wkKey = dKey(getWeekDates(Math.floor(planOffset / 7))[0]);
-  db.ref('planner/' + wkKey + '/' + dayIdx).once('value', function (snap) {
-    var dayData = snap.val() || {}, today = todayKey(), isT = dk === today;
+  function drawDay(dayData) {
+    var today = todayKey(), isT = dk === today;
     var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
     var persSection = '';
     if (persItems.length) {
@@ -102,7 +111,6 @@ function renderPlannerDay() {
         return '<div class="msug' + (isW ? ' winner' : '') + '" style="padding:8px 10px;margin-bottom:6px"><div class="msug-name" style="font-size:.88rem">' + esc(m.name) + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" style="margin-left:5px;font-size:.75rem;color:var(--bl)">link</a>' : '') + '</div>' +
           '<div class="mvotes" style="margin-top:5px"><button class="vbtn' + (myV ? ' voted' : '') + '" data-vote="' + m.id + '" data-wk="' + wkKey + '" data-di="' + dayIdx + '" data-slot="' + sk + '">+' + vc + '</button>' +
           '<button class="cclaim' + (m.cooker ? ' claimed' : '') + '" data-cook="' + m.id + '" data-wk="' + wkKey + '" data-di="' + dayIdx + '" data-slot="' + sk + '">' + (m.cooker ? esc(m.cooker) : 'Who is cooking?') + '</button>' +
-          '<button class="sm sx" style="font-size:.72rem;padding:3px 8px" data-pushtotesting="' + m.id + '" data-mname="' + esc(m.name) + '">Test</button>' +
           '<button class="xbtn" data-delmeal="' + m.id + '" data-wk="' + wkKey + '" data-di="' + dayIdx + '" data-slot="' + sk + '">x</button></div></div>';
       }).join('') +
         '<button class="add-meal-btn" style="padding:6px;font-size:.78rem" data-addmeal="1" data-wk="' + wkKey + '" data-di="' + dayIdx + '" data-slot="' + sk + '">+ suggest</button></div>';
@@ -111,7 +119,12 @@ function renderPlannerDay() {
       '<div style="font-weight:700;font-size:.95rem;margin-bottom:12px;color:var(--charcoal)">' + dayDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div>' +
       persSection + slotHtml('B', 'Breakfast') + slotHtml('L', 'Lunch') + slotHtml('D', 'Dinner') +
       '</div>';
-  });
+  }
+  if (dayData) {
+    drawDay(dayData);
+  } else {
+    db.ref('planner/' + wkKey + '/' + dayIdx).once('value', function (snap) { drawDay(snap.val() || {}); });
+  }
 }
 
 function renderPlannerMonth() {
@@ -159,7 +172,7 @@ function renderPlannerMonth() {
 }
 
 function openDayDetail(di, wk, dk, dayData) {
-  var d = getWeekDates(planOffset)[di];
+  var d = dk ? (function(){ var p = dk.split('-'); return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])); }()) : getWeekDates(planOffset)[di];
   el('dayDetailTitle').textContent = DAYS[di] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
   function slotDetailHtml(sk, lbl) {
     var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
@@ -167,7 +180,7 @@ function openDayDetail(di, wk, dk, dayData) {
     return '<div class="dd-slot"><div class="dd-slot-hdr">' + lbl + '</div>' + meals.map(function (m) {
       var vc = m.votes ? Object.keys(m.votes).length : 0, myV = m.votes && m.votes[userName];
       return '<div class="dd-meal"><div class="dd-meal-name">' + esc(m.name) + (m.url ? ' <a href="' + esc(m.url) + '" target="_blank" style="font-size:.75rem;color:var(--bl)">link</a>' : '') + '</div><div class="dd-meal-actions"><button class="vbtn' + (myV ? ' voted' : '') + ' sm" data-vote="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" style="font-size:.8rem;padding:5px 10px">+' + vc + '</button><select class="dd-cook-sel" data-setcook="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '"><option value="">Who is cooking?</option>' + memberOpts + '</select>' + (m.cooker ? '<span style="font-size:.78rem;color:var(--sage);font-weight:700">' + esc(m.cooker) + '</span>' : '') + '<button class="xbtn" data-delmeal="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '">x</button></div></div>';
-    }).join('') + '<div class="dd-add"><button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" data-fromdetail="1">+ suggest</button></div></div>';
+    }).join('') + '<div class="dd-add"><button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" data-dk="' + (dk||"") + '" data-fromdetail="1">+ suggest</button></div></div>';
   }
   el('dayDetailBody').innerHTML = slotDetailHtml('B', 'Breakfast') + slotDetailHtml('L', 'Lunch') + slotDetailHtml('D', 'Dinner');
   el('dayDetailBody').querySelectorAll('[data-setcook]').forEach(function (sel) {
