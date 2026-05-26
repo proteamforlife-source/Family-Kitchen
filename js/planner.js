@@ -23,18 +23,12 @@ function saveMealSug() {
 function setupPlannerListener() {
   if (plannerView === 'month') {
     if (plannerRef) plannerRef.off();
-    renderPlannerMonth();
     return;
   }
   var dates = getWeekDates(planOffset), wk = dKey(dates[0]);
   if (plannerRef) plannerRef.off();
   plannerRef = db.ref('planner/' + wk);
-  // If cache already has data for this week, render immediately then let .on() keep it fresh
-  if (plannerWeekCache[wk]) { renderPlanner(); }
-  plannerRef.on('value', function (snap) {
-    plannerWeekCache[wk] = snap.val() || {};
-    renderPlanner();
-  });
+  plannerRef.on('value', function () { renderPlanner(); });
 }
 
 function updatePlannerViewBtns() {
@@ -54,10 +48,10 @@ function renderPlanner() {
   var dates = getWeekDates(planOffset), ws = dates[0], we = dates[6];
   el('planLabel').textContent = ws.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' - ' + we.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   var wk = dKey(ws), today = todayKey();
-  // Use plannerWeekCache (kept fresh by setupPlannerListener .on()) — no .once() race
-  var data = plannerWeekCache[wk] || {};
-  el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
-  el('planGrid').innerHTML = dates.map(function (d, i) {
+  db.ref('planner/' + wk).once('value', function (snap) {
+    var data = snap.val() || {};
+    el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
+    el('planGrid').innerHTML = dates.map(function (d, i) {
     var dk = dKey(d), isT = dk === today, dayData = data[i] || {};
     var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
     var persHtml = persItems.length ? '<div style="margin-bottom:2px">' + persItems.slice(0, 3).map(function (x) {
@@ -75,7 +69,8 @@ function renderPlanner() {
       }).join('') + '<button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + i + '" data-slot="' + sk + '">+ suggest</button></div>';
     }
     return '<div class="plan-day' + (isT ? ' tod' : '') + '" data-di="' + i + '" data-wk="' + wk + '" data-dk="' + dk + '"><h4>' + DAYS[i] + '</h4><div class="plan-date">' + d.getDate() + '/' + (d.getMonth() + 1) + '</div>' + persHtml + slotHtml('B', 'B') + slotHtml('L', 'L') + slotHtml('D', 'D') + '</div>';
-  }).join('');
+    }).join('');
+  });
 }
 
 function renderPlannerDay() {
@@ -182,9 +177,9 @@ function openDayDetail(di, wk, dk, dayData) {
 }
 
 function refreshDayDetail(di, wk, dk) {
-  // Read from cache (kept fresh by .on() listener) — no .once() race
-  var dayData = (plannerWeekCache[wk] && plannerWeekCache[wk][di]) || {};
-  openDayDetail(di, wk, dk, dayData);
+  db.ref('planner/' + wk + '/' + di).once('value', function (snap) {
+    openDayDetail(di, wk, dk, snap.val() || {});
+  });
 }
 
 document.addEventListener('DOMContentLoaded', function () {

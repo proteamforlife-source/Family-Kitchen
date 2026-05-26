@@ -16,7 +16,7 @@ function attemptProtectedAction(recipeId,action){
 function switchTab(id){
   tabs.forEach(function(t){el('pg-'+t).classList.remove('on');el('tb-'+t).classList.remove('on');});
   el('pg-'+id).classList.add('on');el('tb-'+id).classList.add('on');
-  if(id==='p'){el('planGrid').innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">Loading...</div>';setupPlannerListener();}
+  if(id==='p'){renderPlanner();setupPlannerListener();}
   if(id==='d')renderDashboard();
   if(id==='c')renderCalendar();
 }
@@ -219,7 +219,7 @@ var saver=t.closest('[data-saver]');if(saver){var rid2=saver.dataset.saver;attem
   var shrpr=t.closest('[data-shrpr]');if(shrpr){var myr3=personalData.myRecipes||{},sr=myr3[shrpr.dataset.shrpr];if(!sr)return;db.ref('recipes/'+sr.id).set(Object.assign({},sr,{by:userName,notes:{},ratings:{},testing:false}));alert('"'+sr.name+'" shared!');return;}
   var delpr=t.closest('[data-delpr]');if(delpr){if(!confirm('Remove?'))return;db.ref('personal/'+userName+'/myRecipes/'+delpr.dataset.delpr).remove();return;}
   var ptt=t.closest('[data-pushtotesting]');if(ptt){var mname=ptt.dataset.mname;if(!mname)return;var rec={id:'r'+Date.now(),name:mname,cat:'Other',ings:[],steps:'',by:userName||'Family',notes:{},ratings:{},photo:'',testing:true,tags:[]};db.ref('recipes/'+rec.id).set(rec);alert('"'+mname+'" added to Testing!');return;}
-  var planview=t.closest('[data-plannerview]');if(planview){plannerView=planview.dataset.plannerview;if(plannerView==='month'){planMonthOffset=0;}else{planOffset=0;}setupPlannerListener();return;}
+  var planview=t.closest('[data-plannerview]');if(planview){plannerView=planview.dataset.plannerview;if(plannerView==='month'){planMonthOffset=0;}else{planOffset=0;}setupPlannerListener();renderPlanner();return;}
   var editbill=t.closest('[data-editbill]');if(editbill){openEditBill(editbill.dataset.editbill);return;}
   var paybill=t.closest('[data-paybill]');if(paybill){if(!userName)return;var bid=paybill.dataset.paybill,b=bills.find(function(x){return x.id===bid;});if(!b)return;var nextDue='';if(b.freq&&b.freq!=='once'){var d=new Date(b.due+'T00:00:00');if(b.freq==='weekly')d.setDate(d.getDate()+7);else if(b.freq==='fortnightly')d.setDate(d.getDate()+14);else if(b.freq==='monthly')d.setMonth(d.getMonth()+1);else if(b.freq==='quarterly')d.setMonth(d.getMonth()+3);else if(b.freq==='annual')d.setFullYear(d.getFullYear()+1);nextDue=d.toISOString().split('T')[0];}db.ref('bills/'+bid).update({paid:true,paidDate:todayKey(),paidBy:userName});if(nextDue){var newId='bi'+Date.now();db.ref('bills/'+newId).set(Object.assign({},b,{id:newId,paid:false,paidDate:'',paidBy:'',due:nextDue}));}return;}
   var unpaybill=t.closest('[data-unpaybill]');if(unpaybill){db.ref('bills/'+unpaybill.dataset.unpaybill).update({paid:false,paidDate:'',paidBy:''});return;}
