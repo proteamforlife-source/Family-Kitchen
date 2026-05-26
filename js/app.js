@@ -22,8 +22,8 @@ function switchTab(id){
 }
 
 function init(){
-  db.ref('members').on('value',function(snap){
-    members={};snap.forEach(function(c){members[c.key]=c.val();});renderMemberList();
+db.ref('members').once('value',function(snap){
+      members={};snap.forEach(function(c){members[c.key]=c.val();});renderMemberList();
     var sn=localStorage.getItem('fk_name'),sc=localStorage.getItem('fk_color')||'#B8967E';
     if(sn&&members[sn]){userName=sn;userColor=sc;el('authScreen').classList.add('h');el('userPill').innerHTML=avt(sn,sc,20)+'<span>'+esc(sn)+'</span>';loadPersonal();buildPresetTags();buildChatTabs();listenToConvo('family');db.ref('members/'+sn+'/lastSeen').set(Date.now());setTimeout(renderDashboard,400);}
 if(el('pg-d').classList.contains('on')&&userName)renderDashboard();
