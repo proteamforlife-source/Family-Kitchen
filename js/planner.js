@@ -2,6 +2,7 @@
 // v2.1 — unified listener architecture (week/day/month)
 var mealCtx = {};
 var plannerMonthRefs = [];
+var plannerMonthCache = {}; // persistent week data cache for month view
 var plannerDetailCtx = {}; // tracks currently open dayDetailMod context
 
 function saveMealSug() {
@@ -29,7 +30,8 @@ function setupPlannerListener() {
   if (plannerMonthRefs) { plannerMonthRefs.forEach(function(r){ r.off(); }); plannerMonthRefs = []; }
 
   if (plannerView === 'month') {
-    // Month: listen to each visible week individually — avoids root listener loop
+    // Clear cache on month entry so stale weeks don't persist across month navigation
+    plannerMonthCache = {};
     var mdata = getMonthDates(planMonthOffset);
     var uniqueWks = [];
     mdata.days.forEach(function(d) {
@@ -40,8 +42,10 @@ function setupPlannerListener() {
     });
     uniqueWks.forEach(function(wkKey) {
       var ref = db.ref('planner/' + wkKey);
-      ref.on('value', function() {
-        renderPlannerMonth();
+      ref.on('value', function(snap) {
+        // Update only this week's slice — do not reset other weeks
+        plannerMonthCache[wkKey] = snap.val() || {};
+        renderPlannerMonth(plannerMonthCache);
         if (!el('dayDetailMod').classList.contains('h') && plannerDetailCtx.wk) {
           refreshDayDetail(plannerDetailCtx.di, plannerDetailCtx.wk, plannerDetailCtx.dk);
         }
@@ -154,11 +158,15 @@ function renderPlannerDay(dayData) {
   }
 }
 
-function renderPlannerMonth() {
+function renderPlannerMonth(allData) {
   var mdata = getMonthDates(planMonthOffset); el('planLabel').textContent = mdata.label;
   el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
   var firstDay = mdata.days[0].getDay(); if (firstDay === 0) firstDay = 7;
-  var today = todayKey(), uniqueWks = [], allData = {}, wkDone = 0;
+  var today = todayKey();
+  // If allData passed from cache, render immediately — no async fetch needed
+  if (allData) { renderMonthGrid(mdata, firstDay, today, allData); return; }
+  // Initial load: fetch all visible weeks then render
+  var uniqueWks = [], fetchData = {}, wkDone = 0;
   mdata.days.forEach(function (d) {
     var monday = new Date(d), dow = monday.getDay() || 7;
     monday.setDate(monday.getDate() - dow + 1);
@@ -166,36 +174,38 @@ function renderPlannerMonth() {
     if (uniqueWks.indexOf(wkKey) < 0) uniqueWks.push(wkKey);
   });
   var pending = uniqueWks.length;
-  function render() {
-    var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;grid-column:1/-1">' + ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (d) {
-      return '<div style="text-align:center;font-size:.65rem;font-weight:700;color:var(--muted);padding:3px">' + d + '</div>';
-    }).join('') + '</div>';
-    for (var ei = 1; ei < firstDay; ei++) html += '<div></div>';
-    mdata.days.forEach(function (d) {
-      var dk = dKey(d), isT = dk === today, monday = new Date(d), dow = monday.getDay() || 7;
-      monday.setDate(monday.getDate() - dow + 1);
-      var wkKey = dKey(monday), dayIdx = d.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
-      var dayData = (allData[wkKey] && allData[wkKey][dayIdx]) || {};
-      var dinners = dayData['D'] ? Object.values(dayData['D']) : []; var winner = null, maxV = 0;
-      dinners.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc >= maxV) { maxV = vc; winner = m; } });
-      var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
-      html += '<div style="background:#fff;border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--terra)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
-        '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + '">' + d.getDate() + '</div>' +
-        (winner ? '<div style="font-size:.58rem;background:#eaf3ea;border-radius:3px;padding:1px 3px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2a6a2a">' + esc(winner.name) + '</div>' : '') +
-        (persItems.length ? '<div style="font-size:.54rem;color:var(--terrad);margin-top:1px;font-weight:600">' + persItems.length + ' item' + (persItems.length > 1 ? 's' : '') + '</div>' : '') +
-        (dinners.length === 0 && !persItems.length ? '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>' : '') +
-        '</div>';
-    });
-    el('planGrid').innerHTML = html;
-    el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
-  }
-  if (!pending) { render(); return; }
+  if (!pending) { renderMonthGrid(mdata, firstDay, today, {}); return; }
   uniqueWks.forEach(function (wkKey) {
     db.ref('planner/' + wkKey).once('value', function (snap) {
-      allData[wkKey] = snap.val() || {};
-      wkDone++; if (wkDone === pending) render();
+      plannerMonthCache[wkKey] = snap.val() || {};
+      fetchData[wkKey] = plannerMonthCache[wkKey];
+      wkDone++; if (wkDone === pending) renderMonthGrid(mdata, firstDay, today, plannerMonthCache);
     });
   });
+}
+
+function renderMonthGrid(mdata, firstDay, today, allData) {
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;grid-column:1/-1">' + ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (d) {
+    return '<div style="text-align:center;font-size:.65rem;font-weight:700;color:var(--muted);padding:3px">' + d + '</div>';
+  }).join('') + '</div>';
+  for (var ei = 1; ei < firstDay; ei++) html += '<div></div>';
+  mdata.days.forEach(function (d) {
+    var dk = dKey(d), isT = dk === today, monday = new Date(d), dow = monday.getDay() || 7;
+    monday.setDate(monday.getDate() - dow + 1);
+    var wkKey = dKey(monday), dayIdx = d.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
+    var dayData = (allData[wkKey] && allData[wkKey][dayIdx]) || {};
+    var dinners = dayData['D'] ? Object.values(dayData['D']) : []; var winner = null, maxV = 0;
+    dinners.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc >= maxV) { maxV = vc; winner = m; } });
+    var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
+    html += '<div style="background:#fff;border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--terra)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
+      '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + '">' + d.getDate() + '</div>' +
+      (winner ? '<div style="font-size:.58rem;background:#eaf3ea;border-radius:3px;padding:1px 3px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2a6a2a">' + esc(winner.name) + '</div>' : '') +
+      (persItems.length ? '<div style="font-size:.54rem;color:var(--terrad);margin-top:1px;font-weight:600">' + persItems.length + ' item' + (persItems.length > 1 ? 's' : '') + '</div>' : '') +
+      (dinners.length === 0 && !persItems.length ? '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>' : '') +
+      '</div>';
+  });
+  el('planGrid').innerHTML = html;
+  el('planGrid').style.gridTemplateColumns = 'repeat(7,1fr)';
 }
 
 function openDayDetail(di, wk, dk, dayData) {
