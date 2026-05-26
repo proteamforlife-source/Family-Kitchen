@@ -194,21 +194,31 @@ function renderMonthGrid(mdata, firstDay, today, allData) {
     monday.setDate(monday.getDate() - dow + 1);
     var wkKey = dKey(monday), dayIdx = d.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
     var dayData = (allData[wkKey] && allData[wkKey][dayIdx]) || {};
-    var dinners = dayData['D'] ? Object.values(dayData['D']) : [];
-    var breakfasts = dayData['B'] ? Object.values(dayData['B']) : [];
-    var lunches = dayData['L'] ? Object.values(dayData['L']) : [];
-    var totalMeals = dinners.length + breakfasts.length + lunches.length;
-    // Pick dinner winner — most votes, fallback to first entry
-    var winner = dinners.length ? dinners[0] : null; var maxV = 0;
-    dinners.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; winner = m; } });
-    var extraDinners = dinners.length > 1 ? dinners.length - 1 : 0;
+    var slotB = dayData['B'] ? Object.values(dayData['B']) : [];
+    var slotL = dayData['L'] ? Object.values(dayData['L']) : [];
+    var slotD = dayData['D'] ? Object.values(dayData['D']) : [];
+    var hasAny = slotB.length || slotL.length || slotD.length;
+    // Pick top meal per slot — most votes wins, fallback to first
+    function topMeal(meals) {
+      if (!meals.length) return null;
+      var top = meals[0], maxV = 0;
+      meals.forEach(function(m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; top = m; } });
+      return top;
+    }
+    function slotRow(label, meals) {
+      var top = topMeal(meals);
+      var name = top ? esc(top.name) : '—';
+      var color = top ? 'var(--charcoal)' : 'var(--border)';
+      return '<div style="display:flex;gap:3px;align-items:baseline;line-height:1.3">' +
+        '<span style="font-size:.5rem;font-weight:700;color:var(--muted);min-width:7px;flex-shrink:0">' + label + '</span>' +
+        '<span style="font-size:.56rem;color:' + color + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>' +
+        '</div>';
+    }
     var persItems = (personalData && personalData.days && personalData.days[dk] && personalData.days[dk].items) ? Object.values(personalData.days[dk].items) : [];
     html += '<div style="background:#fff;border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--terra)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
-      '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + '">' + d.getDate() + '</div>' +
-      (winner ? '<div style="font-size:.58rem;background:#eaf3ea;border-radius:3px;padding:1px 3px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2a6a2a">' + esc(winner.name) + (extraDinners ? ' +' + extraDinners : '') + '</div>' : '') +
-      (totalMeals > 0 && !winner ? '<div style="font-size:.54rem;color:var(--muted);margin-top:2px;font-weight:600">' + totalMeals + ' meal' + (totalMeals > 1 ? 's' : '') + '</div>' : '') +
-      (persItems.length ? '<div style="font-size:.54rem;color:var(--terrad);margin-top:1px;font-weight:600">' + persItems.length + ' item' + (persItems.length > 1 ? 's' : '') + '</div>' : '') +
-      (totalMeals === 0 && !persItems.length ? '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>' : '') +
+      '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + ';margin-bottom:2px">' + d.getDate() + '</div>' +
+      (hasAny ? slotRow('B', slotB) + slotRow('L', slotL) + slotRow('D', slotD) : '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>') +
+      (persItems.length ? '<div style="font-size:.5rem;color:var(--terra);margin-top:2px;font-weight:600">' + persItems.length + ' item' + (persItems.length > 1 ? 's' : '') + '</div>' : '') +
       '</div>';
   });
   el('planGrid').innerHTML = html;
