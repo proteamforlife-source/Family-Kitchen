@@ -10,13 +10,14 @@ function saveMealSug() {
   var meal = { id: id, name: v, votes: {}, cooker: '', by: userName };
   if (url) meal.url = url;
   if (mealCtx.recipeId) { meal.recipeId = mealCtx.recipeId; meal.recipeType = mealCtx.recipeType; }
-  db.ref('planner/' + mealCtx.wk + '/' + mealCtx.di + '/' + mealCtx.slot + '/' + id).set(meal);
+  var savedCtx = mealCtx.fromDetail ? { di: parseInt(mealCtx.di), wk: mealCtx.wk } : null;
+  db.ref('planner/' + mealCtx.wk + '/' + mealCtx.di + '/' + mealCtx.slot + '/' + id).set(meal, function() {
+    if (savedCtx) { el('dayDetailMod').classList.remove('h'); refreshDayDetail(savedCtx.di, savedCtx.wk, ''); }
+  });
   el('mealMod').classList.add('h');
   el('mealModInp').value = '';
   el('mealModUrl').value = '';
   el('mealSugList').innerHTML = '';
-  // If triggered from day detail modal, reopen and refresh it
-  if (mealCtx.fromDetail) { el('dayDetailMod').classList.remove('h'); refreshDayDetail(parseInt(mealCtx.di), mealCtx.wk, ''); }
 }
 
 function setupPlannerListener() {
