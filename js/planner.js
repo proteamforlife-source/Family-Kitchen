@@ -284,7 +284,30 @@ document.addEventListener('DOMContentLoaded', function () {
   var mealModInp = el('mealModInp');
   if (mealModInp) {
     mealModInp.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') saveMealSug();
+      var list = el('mealSugList');
+      var items = list.querySelectorAll('[data-mealrec]');
+      var active = list.querySelector('.ac-active');
+      var idx = active ? Array.from(items).indexOf(active) : -1;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length) {
+          if (active) active.classList.remove('ac-active');
+          var next = items[Math.min(idx + 1, items.length - 1)];
+          next.classList.add('ac-active');
+          next.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length && idx > 0) {
+          if (active) active.classList.remove('ac-active');
+          var prev = items[idx - 1];
+          prev.classList.add('ac-active');
+          prev.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'Enter') {
+        if (active) { active.click(); }
+        else { saveMealSug(); }
+      }
     });
     mealModInp.addEventListener('input', function () {
       var q = el('mealModInp').value.toLowerCase(), list = el('mealSugList');
@@ -293,9 +316,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var m = recipes.concat(testRecipes).filter(function (r) { return r.name.toLowerCase().indexOf(q) > -1; }).slice(0, 5);
       if (!m.length) { list.style.display = 'none'; return; }
       list.style.display = 'block';
+      list.style.maxHeight = '180px';
+      list.style.overflowY = 'auto';
       list.innerHTML = m.map(function (r) {
         var rtype = r.testing ? 'test' : 'recipe';
-        return '<div style="padding:5px 8px;cursor:pointer;font-size:.84rem;border-radius:6px;background:var(--cream);margin-bottom:2px" data-mealrec="' + esc(r.name) + '" data-mealrecid="' + esc(r.id) + '" data-mealrectype="' + rtype + '">' + esc(r.name) + '</div>';
+        return '<div style="padding:8px 10px;cursor:pointer;font-size:.84rem;border-radius:6px;background:var(--cream);margin-bottom:2px;-webkit-tap-highlight-color:transparent" data-mealrec="' + esc(r.name) + '" data-mealrecid="' + esc(r.id) + '" data-mealrectype="' + rtype + '">' + esc(r.name) + '</div>';
       }).join('');
     });
   }
