@@ -189,7 +189,6 @@ var saver=t.closest('[data-saver]');if(saver){var rid2=saver.dataset.saver;attem
       var mid='m'+Date.now();
       var entry={id:mid,name:pname,votes:{},cooker:'',by:userName};
       if(notesVal)entry.notes=notesVal;
-      console.log('writing to planner/', wk2, di2, slot2);
       db.ref('planner/'+wk2+'/'+di2+'/'+slot2+'/'+mid).set(entry);
       el('plannerMod').classList.add('h');
     };
