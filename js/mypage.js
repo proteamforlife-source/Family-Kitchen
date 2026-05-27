@@ -1,6 +1,8 @@
 // ─── MYPAGE.JS ────────────────────────────────────────────────────────────
 // KEY CHANGE: loadPersonal now triggers planner re-render when planner tab is active
-function loadPersonal(){if(!userName)return;db.ref('personal/'+userName).on('value',function(snap){personalData=snap.val()||{};if(el('pg-m').classList.contains('on'))renderMyPage();if(el('pg-d').classList.contains('on'))renderDashboard();if(el('pg-p').classList.contains('on'))renderPlanner();if(el('pg-c').classList.contains('on'))renderCalendar();});}
+// Planner has its own Firebase listener — personal writes must not trigger planner rerenders
+// future: when personal context summaries land in day detail, wire them via plannerDetailCtx refresh only
+function loadPersonal(){if(!userName)return;db.ref('personal/'+userName).on('value',function(snap){personalData=snap.val()||{};if(el('pg-m').classList.contains('on'))renderMyPage();if(el('pg-d').classList.contains('on'))renderDashboard();if(el('pg-c').classList.contains('on'))renderCalendar();});}
 function savePers(path,val){if(!userName)return;db.ref('personal/'+userName+'/'+path).set(val);}
 
 function renderMyPage(){
