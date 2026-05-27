@@ -1,5 +1,5 @@
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--sage:#7C6F64;--saged:#5e5249;--cream:#F7F3EE;--terra:#B8967E;--terrad:#96705a;--charcoal:#2A2218;--muted:#8a7d70;--card:#fff;--border:#D4C4B5;--shadow:0 2px 12px rgba(0,0,0,0.07);--re:#c0392b;--bl:#3a7bd5}
+:root{--sage:#7C6F64;--saged:#5e5249;--cream:#F7F3EE;--terra:#B8967E;--terrad:#96705a;--charcoal:#2A2218;--muted:#8a7d70;--card:#fff;--border:#D4C4B5;--shadow:0 2px 12px rgba(0,0,0,0.07);--re:#c0392b;--bl:#3a7bd5;--oat:#E9E1D6;--latte:#DCCBB6;--taupe:#B8A995;--today-bg:#FDF6F3;--today-border:#DCCBB6;--bld-b-bg:#EEF0EB;--bld-b-text:#7F8A73;--bld-l-bg:#EDE5D8;--bld-l-text:#A08F7A;--bld-d-bg:#F0E8E4;--bld-d-text:#C06A4E}
 body{font-family:'Segoe UI',sans-serif;background:#F7F3EE;color:var(--charcoal);min-height:100vh}
 #authScreen{position:fixed;inset:0;background:#7C6F64;display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px}
 #authScreen.h{display:none}
@@ -335,10 +335,6 @@ main{max-width:720px;margin:0 auto;padding:14px 12px}
   gap: 4px;
   margin-top: 5px;
   margin-bottom: 2px;
-  --bld-b-bg:#EEF0EB;--bld-b-text:#7F8A73;
-  --bld-l-bg:#EDE5D8;--bld-l-text:#A08F7A;
-  --bld-d-bg:#F0E8E4;--bld-d-text:#C06A4E;
-  --today-bg:#FDF6F3;--today-border:#DCCBB6;
 }
 .rtag {
   font-size: .68rem;
