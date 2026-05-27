@@ -100,7 +100,7 @@ function renderPlanner(weekData) {
         var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
         var winner = null, maxV = 0;
         meals.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; winner = m.id; } });
-        return '<div><div class="plan-slot-lbl">' + lbl + '</div>' + meals.map(function (m) {
+        return '<div><div class="slot-lbl-' + sk.toLowerCase() + '">' + lbl + '</div>' + meals.map(function (m) {
           var vc = m.votes ? Object.keys(m.votes).length : 0;
           var myV = m.votes && m.votes[userName];
           var isW = m.id === winner && maxV > 0;
@@ -137,7 +137,7 @@ function renderPlannerDay(dayData) {
       var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
       var winner = null, maxV = 0;
       meals.forEach(function (m) { var vc = m.votes ? Object.keys(m.votes).length : 0; if (vc > maxV) { maxV = vc; winner = m.id; } });
-      return '<div style="margin-bottom:14px"><div class="dd-slot-hdr">' + lbl + '</div>' + meals.map(function (m) {
+      return '<div style="margin-bottom:14px"><div class="day-slot-' + sk.toLowerCase() + '">' + lbl + '</div>' + meals.map(function (m) {
         var vc = m.votes ? Object.keys(m.votes).length : 0, myV = m.votes && m.votes[userName], isW = m.id === winner && maxV > 0;
         return '<div class="msug' + (isW ? ' winner' : '') + '" style="padding:8px 10px;margin-bottom:6px"><div class="msug-name" style="font-size:.88rem">' + esc(m.name) + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" style="margin-left:5px;font-size:.75rem;color:var(--bl)">link</a>' : '') + '</div>' +
           '<div class="mvotes" style="margin-top:5px"><button class="vbtn' + (myV ? ' voted' : '') + '" data-vote="' + m.id + '" data-wk="' + wkKey + '" data-di="' + dayIdx + '" data-slot="' + sk + '">+' + vc + '</button>' +
@@ -206,9 +206,9 @@ function renderMonthGrid(mdata, firstDay, today, allData) {
       return top;
     }
     var slotStyles = {
-      B: 'background:#E9E1D6;color:#7F8A73;',
-      L: 'background:#DCCBB6;color:#A08F7A;',
-      D: 'background:#E07A5F;color:#fff;'
+      B: 'background:#EEF0EB;color:#7F8A73;',
+      L: 'background:#EDE5D8;color:#A08F7A;',
+      D: 'background:#F0E8E4;color:#C06A4E;'
     };
     function slotRow(label, meals) {
       var top = topMeal(meals);
@@ -220,7 +220,7 @@ function renderMonthGrid(mdata, firstDay, today, allData) {
         '<span style="font-size:.54rem;color:' + nameColor + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>' +
         '</div>';
     }
-    html += '<div style="background:#fff;border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--terra)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
+    html += '<div style="background:' + (isT ? 'var(--today-bg)' : '#fff') + ';border-radius:7px;padding:4px;border:1.5px solid ' + (isT ? 'var(--today-border)' : 'var(--border)') + ';min-height:52px;cursor:pointer" data-di="' + dayIdx + '" data-wk="' + wkKey + '" data-dk="' + dk + '">' +
       '<div style="font-size:.65rem;font-weight:700;color:' + (isT ? 'var(--terra)' : 'var(--muted)') + ';margin-bottom:2px">' + d.getDate() + '</div>' +
       (hasAny ? slotRow('B', slotB) + slotRow('L', slotL) + slotRow('D', slotD) : '<div style="font-size:.55rem;color:var(--border);margin-top:3px;text-align:center">+</div>') +
       '</div>';
@@ -235,7 +235,7 @@ function openDayDetail(di, wk, dk, dayData) {
   function slotDetailHtml(sk, lbl) {
     var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
     var memberOpts = Object.keys(members).map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
-    return '<div class="dd-slot"><div class="dd-slot-hdr">' + lbl + '</div>' + meals.map(function (m) {
+    return '<div class="dd-slot dd-slot-' + sk.toLowerCase() + '"><div class="dd-slot-hdr">' + lbl + '</div>' + meals.map(function (m) {
       var vc = m.votes ? Object.keys(m.votes).length : 0, myV = m.votes && m.votes[userName];
       return '<div class="dd-meal"><div class="dd-meal-name">' + esc(m.name) + (m.url ? ' <a href="' + esc(m.url) + '" target="_blank" style="font-size:.75rem;color:var(--bl)">link</a>' : '') + '</div><div class="dd-meal-actions"><button class="vbtn' + (myV ? ' voted' : '') + ' sm" data-vote="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" style="font-size:.8rem;padding:5px 10px">+' + vc + '</button><select class="dd-cook-sel" data-setcook="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '"><option value="">Who is cooking?</option>' + memberOpts + '</select>' + (m.cooker ? '<span style="font-size:.78rem;color:var(--sage);font-weight:700">' + esc(m.cooker) + '</span>' : '') + '<button class="xbtn" data-delmeal="' + m.id + '" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '">x</button></div></div>';
     }).join('') + '<div class="dd-add"><button class="add-meal-btn" data-addmeal="1" data-wk="' + wk + '" data-di="' + di + '" data-slot="' + sk + '" data-dk="' + (dk||"") + '" data-fromdetail="1">+ suggest</button></div></div>';
