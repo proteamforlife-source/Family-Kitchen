@@ -33,9 +33,28 @@ if(el('pg-d').classList.contains('on')&&userName)renderDashboard();
   db.ref('shopping').on('value',function(snap){shopItems=[];snap.forEach(function(c){shopItems.push(c.val());});renderShopping();});
   db.ref('bills').on('value',function(snap){bills=[];snap.forEach(function(c){bills.push(c.val());});renderBills();if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
   db.ref('calendarEvents').on('value',function(snap){calEvents=[];snap.forEach(function(c){calEvents.push(c.val());});if(el('pg-c')&&el('pg-c').classList.contains('on'))renderCalendar();});
-  db.ref('dinnerQ/'+todayKey()).on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
+  attachDinnerQListener();
   db.ref('planner/'+dKey(getWeekDates(0)[0])).on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
   setupPlannerListener();
+  scheduleMidnightRollover();
+}
+
+var dinnerQRef=null;
+function attachDinnerQListener(){
+  if(dinnerQRef)dinnerQRef.off();
+  dinnerQRef=db.ref('dinnerQ/'+todayKey());
+  dinnerQRef.on('value',function(){if(el('pg-d').classList.contains('on')&&userName)renderDashboard();});
+}
+
+function scheduleMidnightRollover(){
+  var now=new Date();
+  var midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,0,0);
+  var msUntilMidnight=midnight-now;
+  setTimeout(function(){
+    attachDinnerQListener();
+    if(userName)renderDashboard();
+    scheduleMidnightRollover();
+  },msUntilMidnight);
 }
 
 document.addEventListener('DOMContentLoaded',function(){
