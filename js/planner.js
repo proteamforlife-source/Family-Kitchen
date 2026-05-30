@@ -56,13 +56,21 @@ function setupPlannerListener() {
   }
 
   // separate offsets per view — planWeekOffset for week/month, planDayOffset for day
-  var wkOff = (plannerView === 'day') ? Math.floor(planDayOffset / 7) : planWeekOffset;
+  var wkOff;
+  if (plannerView === 'day') {
+    var tgt = new Date(); tgt.setDate(tgt.getDate() + planDayOffset); tgt.setHours(0,0,0,0);
+    var tdow = tgt.getDay() || 7; var tgtMon = new Date(tgt); tgtMon.setDate(tgt.getDate() - tdow + 1);
+    var now2 = new Date(); now2.setHours(0,0,0,0); var ndow = now2.getDay() || 7; var nowMon = new Date(now2); nowMon.setDate(now2.getDate() - ndow + 1);
+    wkOff = Math.round((tgtMon - nowMon) / (7 * 86400000));
+  } else {
+    wkOff = planWeekOffset;
+  }
   var dates = getWeekDates(wkOff), wk = dKey(dates[0]);
   plannerRef = db.ref('planner/' + wk);
   plannerRef.on('value', function (snap) {
     var wkData = snap.val() || {};
     if (plannerView === 'day') {
-      var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset);
+      var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset); dayDate.setHours(0,0,0,0);
       var dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
       renderPlannerDay(wkData[dayIdx] || {});
     } else {
@@ -131,7 +139,7 @@ function renderPlanner(weekData) {
 }
 
 function renderPlannerDay(dayData) {
-  var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset);
+  var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset); dayDate.setHours(0,0,0,0);
   var dk = dKey(dayDate), dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
   el('planLabel').textContent = dayDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
   el('planGrid').style.gridTemplateColumns = '1fr';
