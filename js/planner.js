@@ -55,14 +55,14 @@ function setupPlannerListener() {
     return;
   }
 
-  // planOffset = day offset in day view, week offset in week view
-  var wkOff = (plannerView === 'day') ? Math.floor(planOffset / 7) : planOffset;
+  // separate offsets per view — planWeekOffset for week/month, planDayOffset for day
+  var wkOff = (plannerView === 'day') ? Math.floor(planDayOffset / 7) : planWeekOffset;
   var dates = getWeekDates(wkOff), wk = dKey(dates[0]);
   plannerRef = db.ref('planner/' + wk);
   plannerRef.on('value', function (snap) {
     var wkData = snap.val() || {};
     if (plannerView === 'day') {
-      var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planOffset);
+      var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset);
       var dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
       renderPlannerDay(wkData[dayIdx] || {});
     } else {
@@ -85,7 +85,7 @@ function renderPlanner(weekData) {
   updatePlannerViewBtns();
   if (plannerView === 'month') { renderPlannerMonth(); return; }
   if (plannerView === 'day') { renderPlannerDay(); return; }
-  var dates = getWeekDates(planOffset), ws = dates[0], we = dates[6];
+  var dates = getWeekDates(planWeekOffset), ws = dates[0], we = dates[6];
   el('planLabel').textContent = ws.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' - ' + we.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   var wk = dKey(ws), today = todayKey();
   function drawWeek(data) {
@@ -116,11 +116,11 @@ function renderPlanner(weekData) {
 }
 
 function renderPlannerDay(dayData) {
-  var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planOffset);
+  var dayDate = new Date(); dayDate.setDate(dayDate.getDate() + planDayOffset);
   var dk = dKey(dayDate), dayIdx = dayDate.getDay() - 1; if (dayIdx < 0) dayIdx = 6;
   el('planLabel').textContent = dayDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
   el('planGrid').style.gridTemplateColumns = '1fr';
-  var wkKey = dKey(getWeekDates(Math.floor(planOffset / 7))[0]);
+  var wkKey = dKey(getWeekDates(Math.floor(planDayOffset / 7))[0]);
   function drawDay(dayData) {
     var today = todayKey(), isT = dk === today;
     // future: personal day context belongs in Planner day detail only — not in the shared day view
@@ -223,7 +223,7 @@ function renderMonthGrid(mdata, firstDay, today, allData) {
 }
 
 function openDayDetail(di, wk, dk, dayData, fromMonth) {
-  var d = dk ? (function(){ var p = dk.split('-'); return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])); }()) : getWeekDates(planOffset)[di];
+  var d = dk ? (function(){ var p = dk.split('-'); return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])); }()) : getWeekDates(planWeekOffset)[di];
   el('dayDetailTitle').textContent = DAYS[di] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
   function slotDetailHtml(sk, lbl) {
     var meals = dayData[sk] ? Object.values(dayData[sk]) : [];
@@ -259,13 +259,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var planPrev = el('planPrev');
   if (planPrev) planPrev.addEventListener('click', function () {
-    if (plannerView === 'month') { planMonthOffset--; } else { planOffset--; }
+    if (plannerView === 'month') { planMonthOffset--; } else if (plannerView === 'day') { planDayOffset--; } else { planWeekOffset--; }
     renderPlanner(); setupPlannerListener();
   });
 
   var planNext = el('planNext');
   if (planNext) planNext.addEventListener('click', function () {
-    if (plannerView === 'month') { planMonthOffset++; } else { planOffset++; }
+    if (plannerView === 'month') { planMonthOffset++; } else if (plannerView === 'day') { planDayOffset++; } else { planWeekOffset++; }
     renderPlanner(); setupPlannerListener();
   });
 

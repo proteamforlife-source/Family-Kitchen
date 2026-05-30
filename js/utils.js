@@ -26,6 +26,7 @@ var activeTag='', activeCat='';
 var billFilter='all';
 var calView='month', calOffset=0;
 var plannerView='week', planOffset=0, planMonthOffset=0;
+var planWeekOffset=0, planDayOffset=0; // separate offsets per view — never share between week and day
 var plannerRef=null, plannerCalCache={};
 var weekOffset=0, monthOffset=0;
 var myPageView='week';
