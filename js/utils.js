@@ -44,7 +44,7 @@ function el(id){return document.getElementById(id);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});}catch(e){return d;}}
 function dKey(d){return d.toISOString().split('T')[0];}
-function todayKey(){return dKey(new Date());}
+function todayKey(){var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function daysUntil(ds){var d=new Date(ds+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);return Math.round((d-t)/(86400000));}
 function parseIng(s){var m=s.match(/^([\d\u00BC\u00BD\u00BE\/\.\s\-]+\s*(?:g|kg|ml|tsp|tbsp|cups?|oz|lbs?|pinch|bunch|handful|slices?|cans?|cloves?)\.?)\s+(.+)$/i);if(m&&m[2]&&m[2].length>1)return{q:m[1].trim(),n:m[2].trim()};var m2=s.match(/^([\d\/\.\s\-]+)\s+(.+)$/);if(m2&&m2[2]&&m2[2].length>1)return{q:m2[1].trim(),n:m2[2].trim()};return{q:'',n:s};}
 function avt(name,color,size){size=size||32;var fs=Math.round(size*0.42);return'<div class="mavatar" style="background:'+(color||'#8A7A6E')+';width:'+size+'px;height:'+size+'px;font-size:'+fs+'px">'+esc((name||'?').charAt(0).toUpperCase())+'</div>';}
