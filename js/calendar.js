@@ -88,12 +88,21 @@ function getMonthDatesForCal(offset) {
   return { days: days, label: d.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' }), year: yr, month: mo };
 }
 
+// ── Get Monday of the week containing a given date ──
+function getMondayOfWeek(d) {
+  var day = new Date(d);
+  var dow = day.getDay() || 7;
+  day.setDate(day.getDate() - dow + 1);
+  day.setHours(0, 0, 0, 0);
+  return day;
+}
+
 function openMonthJump() {
   if (el('calMonthJumpModal')) { el('calMonthJumpModal').remove(); return; }
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var now = new Date();
-  var html = '<div id="calMonthJumpModal" style="position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(42,34,24,.45)">';
-  html += '<div style="background:#fff;border-radius:18px;padding:20px;width:320px;max-width:92vw;box-shadow:0 8px 32px rgba(42,34,24,.18)">';
+  var html = '<div id="calMonthJumpModal" style="position:absolute;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(42,34,24,.45)">';
+  html += '<div style="background:#fff;border-radius:18px;padding:20px;width:300px;max-width:92%;box-shadow:0 4px 16px rgba(42,34,24,.12)">';
   html += '<div style="font-weight:700;font-size:.95rem;color:var(--charcoal);margin-bottom:14px;text-align:center">Jump to Month</div>';
   for (var y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
     html += '<div style="margin-bottom:10px"><div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">' + y + '</div>';
@@ -108,7 +117,9 @@ function openMonthJump() {
   }
   html += '<button id="calJumpClose" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--cream);color:var(--muted);font-size:.84rem;cursor:pointer">Close</button>';
   html += '</div></div>';
-  document.body.insertAdjacentHTML('beforeend', html);
+  var pg = el('pg-c');
+  if (pg) { pg.style.position = 'relative'; pg.insertAdjacentHTML('beforeend', html); }
+  else document.body.insertAdjacentHTML('beforeend', html);
 }
 
 function updateCalNav() {
@@ -151,8 +162,8 @@ function renderCalMonth() {
   var firstDay = mdata.days[0].getDay(); if (firstDay === 0) firstDay = 7;
   var wkKeys = [];
   mdata.days.forEach(function(d) {
-    var mon = new Date(d); var dow = mon.getDay() || 7; mon.setDate(mon.getDate() - dow + 1);
-    var wk = dKey(mon); if (wkKeys.indexOf(wk) < 0) wkKeys.push(wk);
+    var wk = dKey(getMondayOfWeek(d));
+    if (wkKeys.indexOf(wk) < 0) wkKeys.push(wk);
   });
   loadPlannerForCalendar(wkKeys, function() {
     var html = '<div class="cal-month-grid">';
@@ -204,43 +215,44 @@ function renderCalWeek() {
 }
 
 function renderCalDay() {
-  var d = new Date(); d.setDate(d.getDate() + calOffset);
+  var d = new Date(); d.setDate(d.getDate() + calOffset); d.setHours(0, 0, 0, 0);
   var dk = dKey(d);
-  var wk = dKey(getWeekDates(Math.floor(calOffset / 7))[0]);
+  var wk = dKey(getMondayOfWeek(d));
   loadPlannerForCalendar([wk], function() {
     var allItems = getCalItemsForDate(dk).concat(getMealsForDate(dk));
-    if (!allItems.length) {
-      el('calGrid').innerHTML = '<div class="cal-day-view"><div class="cal-day-section"><div style="text-align:center;padding:28px;color:var(--muted)">Nothing on ☀️<br><span style="font-size:.82rem">Enjoy the quiet!</span></div></div></div>';
-      return;
-    }
     var groups = { birthday: [], event: [], meal: [], personal: [] };
     allItems.forEach(function(item) {
       var g = item.type === 'birthday' ? 'birthday' : item.type === 'event' ? 'event' : item.type === 'meal' ? 'meal' : 'personal';
       if (!groups[g]) groups[g] = [];
       groups[g].push(item);
     });
+    var hasItems = allItems.length > 0;
     var sectionTitles = { birthday: '🎂 Birthdays', event: '📅 Events', meal: '🍽 Meals', personal: '📋 Schedule' };
     var html = '<div class="cal-day-view">';
-    Object.keys(groups).forEach(function(g) {
-      if (!groups[g].length) return;
-      var t = CAL_TYPES[g] || CAL_TYPES.personal;
-      html += '<div class="cal-day-section"><div class="cal-day-section-title" style="color:' + t.color + '">' + sectionTitles[g] + '</div>';
-      groups[g].forEach(function(item) {
-        html += '<div class="cal-day-item" style="background:' + t.bg + ';border-color:' + t.border + '">';
-        html += '<div class="cal-day-item-icon">' + t.icon + '</div>';
-        html += '<div style="flex:1"><div class="cal-day-item-text">' + esc(item.text) + '</div>';
-        if (item.source) html += '<div class="cal-day-item-sub">' + esc(item.source) + '</div>';
-        html += '</div>';
-        if (item.id && (item.type === 'birthday' || item.type === 'event')) {
-          html += '<div style="display:flex;gap:6px;align-items:center">';
-          html += '<button class="sm sx" style="font-size:.72rem;padding:4px 10px;border-radius:8px" data-caledit="' + item.id + '">Edit</button>';
-          html += '<button style="background:none;border:none;font-size:1rem;cursor:pointer;padding:2px 6px" data-caldel="' + item.id + '">🗑</button>';
+    if (!hasItems) {
+      html += '<div class="cal-day-section"><div style="text-align:center;padding:28px;color:var(--muted)">Nothing on ☀️<br><span style="font-size:.82rem">Enjoy the quiet!</span></div></div>';
+    } else {
+      Object.keys(groups).forEach(function(g) {
+        if (!groups[g].length) return;
+        var t = CAL_TYPES[g] || CAL_TYPES.personal;
+        html += '<div class="cal-day-section"><div class="cal-day-section-title" style="color:' + t.color + '">' + sectionTitles[g] + '</div>';
+        groups[g].forEach(function(item) {
+          html += '<div class="cal-day-item" style="background:' + t.bg + ';border-color:' + t.border + '">';
+          html += '<div class="cal-day-item-icon">' + t.icon + '</div>';
+          html += '<div style="flex:1"><div class="cal-day-item-text">' + esc(item.text) + '</div>';
+          if (item.source) html += '<div class="cal-day-item-sub">' + esc(item.source) + '</div>';
           html += '</div>';
-        }
+          if (item.id && (item.type === 'birthday' || item.type === 'event')) {
+            html += '<div style="display:flex;gap:6px;align-items:center">';
+            html += '<button class="sm sx" style="font-size:.72rem;padding:4px 10px;border-radius:8px" data-caledit="' + item.id + '">Edit</button>';
+            html += '<button style="background:none;border:none;font-size:1rem;cursor:pointer;padding:2px 6px" data-caldel="' + item.id + '">🗑</button>';
+            html += '</div>';
+          }
+          html += '</div>';
+        });
         html += '</div>';
       });
-      html += '</div>';
-    });
+    }
     html += '</div>';
     el('calGrid').innerHTML = html;
   });
@@ -268,24 +280,23 @@ function openCalEdit(id) {
     el('calBirthYear').value = ev.birthYear || '';
     el('calBirthdayRecurring').checked = ev.recurring !== false;
   }
-  el('calAddSave').dataset.editing = '1';
+  var savBtn = el('calAddSave'); if (savBtn) savBtn.dataset.editing = '1';
+  var h3 = el('calAddMod').querySelector('h3'); if (h3) h3.textContent = 'Edit Event';
   el('calAddMod').classList.remove('h');
 }
 
 // ─── ALL LISTENERS ─────────────────────────────────────────────────────────
 
-// ── Nav delegation — single handler, no stacking ──
+// ── Nav + view + day-tap delegation (caledit/caldel handled by app.js) ──
 document.addEventListener('click', function(e) {
   var t = e.target;
 
-  // Prev / Next / Today — matched by ID on dynamically rendered buttons
   if (t.id === 'calPrevNav') { calOffset--; renderCalendar(); return; }
   if (t.id === 'calNextNav') { calOffset++; renderCalendar(); return; }
   if (t.id === 'calTodayBtn') { calOffset = 0; renderCalendar(); return; }
   if (t.id === 'calLabelInner' && calView === 'month') { openMonthJump(); return; }
-  if (t.id === 'calJumpClose') { el('calMonthJumpModal').remove(); return; }
+  if (t.id === 'calJumpClose') { var jm = el('calMonthJumpModal'); if (jm) jm.remove(); return; }
 
-  // Month jump modal — pick a month
   var jumpBtn = t.closest('[data-jumpval]');
   if (jumpBtn && el('calMonthJumpModal')) {
     calOffset = parseInt(jumpBtn.dataset.jumpval);
@@ -293,10 +304,8 @@ document.addEventListener('click', function(e) {
     renderCalendar(); return;
   }
 
-  // Tap outside modal to close
   if (t.id === 'calMonthJumpModal') { t.remove(); return; }
 
-  // View toggle
   var cv = t.closest('[data-calview]');
   if (cv && el('pg-c') && el('pg-c').classList.contains('on')) {
     calView = cv.dataset.calview;
@@ -305,7 +314,6 @@ document.addEventListener('click', function(e) {
     renderCalendar(); return;
   }
 
-  // Tap day in month → day view
   var caldk = t.closest('[data-caldk]');
   if (caldk && el('pg-c') && el('pg-c').classList.contains('on')) {
     calView = 'day';
@@ -315,12 +323,10 @@ document.addEventListener('click', function(e) {
     ['month','week','day'].forEach(function(v) { var b = el('cv-'+v); if (b) b.className = 'cal-type-btn'+(calView===v?' on':''); });
     renderCalendar(); return;
   }
-
 });
 
 document.addEventListener('DOMContentLoaded', function() {
 
-  // ── Add to Calendar modal ──
   var calAddBtn = el('calAddBtn');
   if (calAddBtn) calAddBtn.addEventListener('click', function() {
     if (!userName) { alert('Sign in first!'); return; }
@@ -330,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
     el('calBirthdayFields').style.display = 'none';
     el('calPersonalFields').style.display = 'none';
     var savBtn = el('calAddSave'); if (savBtn) savBtn.dataset.editing = '';
+    var h3 = el('calAddMod').querySelector('h3'); if (h3) h3.textContent = 'Add to Calendar';
     editCalId = '';
     el('calAddMod').classList.remove('h');
   });
@@ -339,6 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
     el('calAddMod').classList.add('h');
     editCalId = '';
     var savBtn = el('calAddSave'); if (savBtn) savBtn.dataset.editing = '';
+    var h3 = el('calAddMod').querySelector('h3'); if (h3) h3.textContent = 'Add to Calendar';
   });
 
   var calTypeSelect = el('calTypeSelect');
@@ -363,7 +371,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (type === 'birthday') { updates.birthYear = el('calBirthYear').value ? parseInt(el('calBirthYear').value) : null; updates.recurring = el('calBirthdayRecurring').checked; }
       db.ref('calendarEvents/' + editCalId).update(updates);
       el('calAddMod').classList.add('h'); editCalId = ''; calAddSave.dataset.editing = '';
-      setTimeout(renderCalendar, 400); return;
+      var h3 = el('calAddMod').querySelector('h3'); if (h3) h3.textContent = 'Add to Calendar';
+      return;
     }
     var id = 'ce' + Date.now();
     if (type === 'personal') {
@@ -377,7 +386,6 @@ document.addEventListener('DOMContentLoaded', function() {
       db.ref('calendarEvents/' + id).set({ id: id, name: name, date: date, type: type, notes: notes, by: userName });
     }
     el('calAddMod').classList.add('h');
-    setTimeout(renderCalendar, 400);
   });
 
 });
