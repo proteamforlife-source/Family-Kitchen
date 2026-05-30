@@ -19,6 +19,8 @@ function switchTab(id){
   if(id==='p'){renderPlanner();setupPlannerListener();}
   if(id==='d')renderDashboard();
   if(id==='c')renderCalendar();
+  if(id==='m')renderMyPage();
+  if(id==='b')renderBills();
 }
 
 function init(){
@@ -61,8 +63,6 @@ document.addEventListener('DOMContentLoaded',function(){
   tabs.forEach(function(id){
     el('tb-'+id).addEventListener('click',function(){
       switchTab(id);
-      if(id==='m')renderMyPage();
-      if(id==='b')renderBills();
     });
   });
 
