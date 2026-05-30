@@ -222,7 +222,13 @@ var saver=t.closest('[data-saver]');if(saver){var rid2=saver.dataset.saver;attem
   var planview=t.closest('[data-plannerview]');if(planview){var pv=planview.dataset.plannerview;if(pv==='month'){plannerView='month';planMonthOffset=0;}else if(pv==='day'){// inherit from week view: jump to Monday of currently viewed week
     if(plannerView==='week'){planDayOffset=planWeekOffset*7;}else if(plannerView==='month'){planDayOffset=0;}// else already in day — keep planDayOffset as-is
     plannerView='day';}else{// switching to week: inherit from day view so week contains the viewed day
-    if(plannerView==='day'){planWeekOffset=Math.floor(planDayOffset/7);}plannerView='week';}setupPlannerListener();renderPlanner();return;}
+    if(plannerView==='day'){
+      // find Monday of the target day, compare to Monday of current week
+      var targetDay=new Date();targetDay.setDate(targetDay.getDate()+planDayOffset);targetDay.setHours(0,0,0,0);
+      var tdow=targetDay.getDay()||7;var targetMon=new Date(targetDay);targetMon.setDate(targetDay.getDate()-tdow+1);
+      var todayD=new Date();todayD.setHours(0,0,0,0);var tdow2=todayD.getDay()||7;var thisMon=new Date(todayD);thisMon.setDate(todayD.getDate()-tdow2+1);
+      planWeekOffset=Math.round((targetMon-thisMon)/(7*86400000));
+    }plannerView='week';}setupPlannerListener();renderPlanner();return;}
   var editbill=t.closest('[data-editbill]');if(editbill){openEditBill(editbill.dataset.editbill);return;}
   var paybill=t.closest('[data-paybill]');if(paybill){if(!userName)return;var bid=paybill.dataset.paybill,b=bills.find(function(x){return x.id===bid;});if(!b)return;var nextDue='';if(b.freq&&b.freq!=='once'){var d=new Date(b.due+'T00:00:00');if(b.freq==='weekly')d.setDate(d.getDate()+7);else if(b.freq==='fortnightly')d.setDate(d.getDate()+14);else if(b.freq==='monthly')d.setMonth(d.getMonth()+1);else if(b.freq==='quarterly')d.setMonth(d.getMonth()+3);else if(b.freq==='annual')d.setFullYear(d.getFullYear()+1);nextDue=d.toISOString().split('T')[0];}db.ref('bills/'+bid).update({paid:true,paidDate:todayKey(),paidBy:userName});if(nextDue){var newId='bi'+Date.now();db.ref('bills/'+newId).set(Object.assign({},b,{id:newId,paid:false,paidDate:'',paidBy:'',due:nextDue}));}return;}
   var unpaybill=t.closest('[data-unpaybill]');if(unpaybill){db.ref('bills/'+unpaybill.dataset.unpaybill).update({paid:false,paidDate:'',paidBy:''});return;}
