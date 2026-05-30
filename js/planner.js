@@ -83,8 +83,19 @@ function updatePlannerViewBtns() {
 
 function renderPlanner(weekData) {
   updatePlannerViewBtns();
-  if (plannerView === 'month') { renderPlannerMonth(); return; }
-  if (plannerView === 'day') { renderPlannerDay(); return; }
+  if (plannerView === 'month') {
+    var dp0 = el('planDatePick'); if (dp0) dp0.style.display = 'none';
+    renderPlannerMonth(); return;
+  }
+  if (plannerView === 'day') {
+    var dp = el('planDatePick');
+    if (dp) { dp.style.display = 'inline-block'; var d0 = new Date(); d0.setDate(d0.getDate() + planDayOffset); dp.value = dKey(d0); }
+    renderPlannerDay(); return;
+  }
+  // week view — show date picker, set to Monday of current week
+  var dp2 = el('planDatePick');
+  if (dp2) { dp2.style.display = 'inline-block'; dp2.value = dKey(getWeekDates(planWeekOffset)[0]); }
+
   var dates = getWeekDates(planWeekOffset), ws = dates[0], we = dates[6];
   el('planLabel').textContent = ws.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' - ' + we.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   var wk = dKey(ws), today = todayKey();
@@ -262,6 +273,28 @@ document.addEventListener('DOMContentLoaded', function () {
     planWeekOffset = 0; planDayOffset = 0; planMonthOffset = 0;
     setupPlannerListener(); renderPlanner();
   });
+
+  var planDatePick = el('planDatePick');
+  if (planDatePick) {
+    planDatePick.addEventListener('change', function () {
+      if (!this.value) return;
+      var picked = new Date(this.value + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var diff = Math.round((picked - today) / 86400000);
+      if (plannerView === 'day') {
+        planDayOffset = diff;
+      } else {
+        // week view — jump to the week containing the picked date
+        planWeekOffset = Math.floor(diff / 7);
+        // adjust for day-of-week: find Monday of picked week
+        var dow = picked.getDay() || 7; // Mon=1..Sun=7
+        var monday = new Date(picked); monday.setDate(picked.getDate() - dow + 1);
+        var todayMonday = new Date(today); var td = todayMonday.getDay() || 7; todayMonday.setDate(today.getDate() - td + 1);
+        planWeekOffset = Math.round((monday - todayMonday) / (7 * 86400000));
+      }
+      setupPlannerListener(); renderPlanner();
+    });
+  }
 
   var planPrev = el('planPrev');
   if (planPrev) planPrev.addEventListener('click', function () {
